@@ -150,7 +150,8 @@ gopls-mcp/
 ├── cmd/gopls-mcp/         # Main application
 ├── internal/
 │   ├── server/            # MCP server implementation
-│   └── lsp/               # LSP client wrapper
+│   ├── lsp/               # LSP client wrapper
+│   └── tools/             # Individual MCP tool implementations
 ├── pkg/types/             # Shared types
 └── README.md
 ```

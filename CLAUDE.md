@@ -30,20 +30,24 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 **Main Flow**: MCP Client → MCP Server → LSP Manager → gopls LSP Client → gopls binary
 
 - `cmd/gopls-mcp/main.go` - Entry point, handles CLI flags and server lifecycle
-- `internal/server/server.go` - MCP server implementation with 6 registered tools
+- `internal/server/server.go` - MCP server implementation and tool registration
 - `internal/lsp/manager.go` - Manages LSP client lifecycle and thread safety
 - `internal/lsp/client.go` - LSP client that communicates with gopls via JSON-RPC
+- `internal/tools/` - Individual tool implementations (one file per MCP tool)
 - `pkg/types/types.go` - Shared types for LSP operations
 
 ### Key Design Patterns
 
-**Tool Registration**: Each MCP tool maps to a specific LSP operation:
-- `gopls.go_to_definition` → LSP Definition request
-- `gopls.find_references` → LSP References request  
-- `gopls.hover_info` → LSP Hover request
-- `gopls.get_completion` → LSP Completion request
-- `gopls.format_code` → LSP DocumentFormatting request
-- `gopls.rename_symbol` → LSP Rename request
+**Tool Registration**: Each MCP tool is implemented in its own file in `internal/tools/`:
+- `go_to_definition.go` - `gopls.go_to_definition` → LSP Definition request
+- `find_references.go` - `gopls.find_references` → LSP References request  
+- `hover_info.go` - `gopls.hover_info` → LSP Hover request
+- `get_completion.go` - `gopls.get_completion` → LSP Completion request
+- `format_code.go` - `gopls.format_code` → LSP DocumentFormatting request
+- `rename_symbol.go` - `gopls.rename_symbol` → LSP Rename request
+- `utils.go` - Shared utilities for path handling and position parsing
+
+**Architecture Pattern**: Tools are registered in `server.go` with a wrapper that injects the LSP client dynamically, allowing tools to be stateless.
 
 **Path Handling**: All file paths are converted to absolute paths and file:// URIs for LSP communication.
 
