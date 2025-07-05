@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
-	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/averycrespi/gopls-mcp/pkg/project"
@@ -25,13 +23,8 @@ const (
 type Client struct {
 	goplsPath string
 	cmd       *exec.Cmd
-	stdin     io.WriteCloser
-	stdout    io.ReadCloser
 	stderr    io.ReadCloser
-	requestID int64
-	responses map[int64]chan json.RawMessage
-	mu        sync.RWMutex
-	done      chan struct{}
+	transport *Transport
 }
 
 // NewClient creates a new LSP client
@@ -42,8 +35,6 @@ func NewClient(goplsPath string) *Client {
 
 	return &Client{
 		goplsPath: goplsPath,
-		responses: make(map[int64]chan json.RawMessage),
-		done:      make(chan struct{}),
 	}
 }
 
@@ -67,15 +58,14 @@ func (c *Client) Start(ctx context.Context, goplsPath string) error {
 	}
 
 	c.cmd = cmd
-	c.stdin = stdin
-	c.stdout = stdout
 	c.stderr = stderr
+	c.transport = NewTransport(stdin, stdout)
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start gopls: %w", err)
 	}
 
-	go c.readResponses()
+	c.transport.Start()
 
 	// Give gopls a moment to start
 	time.Sleep(goplsStartDelay)
@@ -83,120 +73,6 @@ func (c *Client) Start(ctx context.Context, goplsPath string) error {
 	return nil
 }
 
-// readResponses reads responses from gopls stdout
-func (c *Client) readResponses() {
-	defer close(c.done)
-
-	for {
-		// Read Content-Length header byte by byte until we find \r\n\r\n
-		var contentLength int
-		var header []byte
-
-		for {
-			b := make([]byte, 1)
-			if _, err := c.stdout.Read(b); err != nil {
-				return
-			}
-			header = append(header, b[0])
-
-			if len(header) >= 4 && string(header[len(header)-4:]) == "\r\n\r\n" {
-				headerStr := string(header)
-				if _, err := fmt.Sscanf(headerStr, "Content-Length: %d\r\n\r\n", &contentLength); err != nil {
-					continue
-				}
-				break
-			}
-		}
-
-		// Read the JSON response body
-		body := make([]byte, contentLength)
-		if _, err := io.ReadFull(c.stdout, body); err != nil {
-			return
-		}
-
-		c.handleResponse(body)
-	}
-}
-
-type lspResponse struct {
-	ID     json.RawMessage `json:"id"`
-	Result json.RawMessage `json:"result"`
-	Error  json.RawMessage `json:"error"`
-}
-
-// handleResponse handles a JSON-RPC response
-func (c *Client) handleResponse(content []byte) {
-	var resp lspResponse
-	if err := json.Unmarshal(content, &resp); err != nil {
-		return
-	}
-
-	if resp.ID == nil {
-		return // notification
-	}
-
-	var id int64
-	if err := json.Unmarshal(resp.ID, &id); err != nil {
-		return
-	}
-
-	c.mu.RLock()
-	ch, ok := c.responses[id]
-	c.mu.RUnlock()
-
-	if ok {
-		if resp.Error != nil {
-			ch <- resp.Error
-		} else {
-			ch <- resp.Result
-		}
-	}
-}
-
-// sendRequest sends a JSON-RPC request
-func (c *Client) sendRequest(method string, params interface{}) (json.RawMessage, error) {
-	id := atomic.AddInt64(&c.requestID, 1)
-
-	request := map[string]any{
-		"jsonrpc": "2.0",
-		"id":      id,
-		"method":  method,
-		"params":  params,
-	}
-
-	data, err := json.Marshal(request)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
-	}
-
-	ch := make(chan json.RawMessage, 1)
-	c.mu.Lock()
-	c.responses[id] = ch
-	c.mu.Unlock()
-
-	defer func() {
-		c.mu.Lock()
-		delete(c.responses, id)
-		c.mu.Unlock()
-	}()
-
-	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(data))
-	if _, err := c.stdin.Write([]byte(header)); err != nil {
-		return nil, fmt.Errorf("failed to write header: %w", err)
-	}
-
-	if _, err := c.stdin.Write(data); err != nil {
-		return nil, fmt.Errorf("failed to write data: %w", err)
-	}
-
-	// Wait for response with timeout
-	select {
-	case response := <-ch:
-		return response, nil
-	case <-time.After(10 * time.Second):
-		return nil, fmt.Errorf("timeout waiting for response to method %s", method)
-	}
-}
 
 // Initialize initializes the LSP client
 func (c *Client) Initialize(ctx context.Context, rootURI string) error {
@@ -210,39 +86,15 @@ func (c *Client) Initialize(ctx context.Context, rootURI string) error {
 		"capabilities": map[string]any{},
 	}
 
-	_, err := c.sendRequest("initialize", params)
+	_, err := c.transport.SendRequest("initialize", params)
 	if err != nil {
 		return fmt.Errorf("failed to initialize: %w", err)
 	}
 
-	// Send initialized notification using sendNotification helper
-	return c.sendNotification("initialized", map[string]any{})
+	// Send initialized notification
+	return c.transport.SendNotification("initialized", map[string]any{})
 }
 
-// sendNotification sends a JSON-RPC notification
-func (c *Client) sendNotification(method string, params any) error {
-	notification := map[string]any{
-		"jsonrpc": "2.0",
-		"method":  method,
-		"params":  params,
-	}
-
-	data, err := json.Marshal(notification)
-	if err != nil {
-		return fmt.Errorf("failed to marshal notification: %w", err)
-	}
-
-	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(data))
-	if _, err := c.stdin.Write([]byte(header)); err != nil {
-		return fmt.Errorf("failed to write notification header: %w", err)
-	}
-
-	if _, err := c.stdin.Write(data); err != nil {
-		return fmt.Errorf("failed to write notification data: %w", err)
-	}
-
-	return nil
-}
 
 func (c *Client) GoToDefinition(ctx context.Context, uri string, position types.Position) ([]types.Location, error) {
 	params := map[string]any{
@@ -252,7 +104,7 @@ func (c *Client) GoToDefinition(ctx context.Context, uri string, position types.
 		"position": position,
 	}
 
-	response, err := c.sendRequest("textDocument/definition", params)
+	response, err := c.transport.SendRequest("textDocument/definition", params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get definition: %w", err)
 	}
@@ -293,7 +145,7 @@ func (c *Client) FindReferences(ctx context.Context, uri string, position types.
 		},
 	}
 
-	response, err := c.sendRequest("textDocument/references", params)
+	response, err := c.transport.SendRequest("textDocument/references", params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find references: %w", err)
 	}
@@ -314,7 +166,7 @@ func (c *Client) Hover(ctx context.Context, uri string, position types.Position)
 		"position": position,
 	}
 
-	response, err := c.sendRequest("textDocument/hover", params)
+	response, err := c.transport.SendRequest("textDocument/hover", params)
 	if err != nil {
 		return "", fmt.Errorf("failed to get hover: %w", err)
 	}
@@ -353,7 +205,7 @@ func (c *Client) GetCompletion(ctx context.Context, uri string, position types.P
 		"position": position,
 	}
 
-	response, err := c.sendRequest("textDocument/completion", params)
+	response, err := c.transport.SendRequest("textDocument/completion", params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get completion: %w", err)
 	}
@@ -379,7 +231,7 @@ func (c *Client) FormatDocument(ctx context.Context, uri string) ([]json.RawMess
 		},
 	}
 
-	response, err := c.sendRequest("textDocument/formatting", params)
+	response, err := c.transport.SendRequest("textDocument/formatting", params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to format document: %w", err)
 	}
@@ -401,7 +253,7 @@ func (c *Client) RenameSymbol(ctx context.Context, uri string, position types.Po
 		"newName":  newName,
 	}
 
-	response, err := c.sendRequest("textDocument/rename", params)
+	response, err := c.transport.SendRequest("textDocument/rename", params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to rename symbol: %w", err)
 	}
@@ -417,29 +269,19 @@ func (c *Client) RenameSymbol(ctx context.Context, uri string, position types.Po
 }
 
 func (c *Client) Shutdown(ctx context.Context) error {
-	_, err := c.sendRequest("shutdown", nil)
+	_, err := c.transport.SendRequest("shutdown", nil)
 	if err != nil {
 		return fmt.Errorf("failed to shutdown: %w", err)
 	}
 
 	// Send exit notification
-	notification := map[string]any{
-		"jsonrpc": "2.0",
-		"method":  "exit",
+	if err := c.transport.SendNotification("exit", nil); err != nil {
+		return fmt.Errorf("failed to send exit notification: %w", err)
 	}
 
-	data, err := json.Marshal(notification)
-	if err != nil {
-		return fmt.Errorf("failed to marshal exit notification: %w", err)
-	}
-
-	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(data))
-	if _, err := c.stdin.Write([]byte(header)); err != nil {
-		return fmt.Errorf("failed to write exit header: %w", err)
-	}
-
-	if _, err := c.stdin.Write(data); err != nil {
-		return fmt.Errorf("failed to write exit data: %w", err)
+	// Close the transport
+	if err := c.transport.Close(); err != nil {
+		return fmt.Errorf("failed to close transport: %w", err)
 	}
 
 	if c.cmd != nil && c.cmd.Process != nil {
