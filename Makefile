@@ -20,7 +20,7 @@ test-integration: build
 	@echo "Checking gopls is available..."
 	@command -v gopls >/dev/null || (echo "ERROR: gopls not found in PATH. Install with: go install golang.org/x/tools/gopls@latest" && exit 1)
 	@echo "Running full integration tests..."
-	@go test -v . -run TestMCPServer
+	@go test -v ./internal/server -run TestMCPServer
 	@echo "All integration tests passed! ✅"
 
 # Clean build artifacts
