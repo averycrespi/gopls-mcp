@@ -11,9 +11,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // MCPRequest represents a JSON-RPC 2.0 request
@@ -53,23 +54,16 @@ func startMCPServer(t *testing.T, workspaceRoot string) *MCPServerProcess {
 	cmd := exec.Command("go", "run", "main.go", "-workspace-root", workspaceRoot, "-log-level", "debug")
 
 	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		t.Fatalf("Failed to create stdin pipe: %v", err)
-	}
+	assert.NoError(t, err, "Failed to create stdin pipe")
 
 	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		t.Fatalf("Failed to create stdout pipe: %v", err)
-	}
+	assert.NoError(t, err, "Failed to create stdout pipe")
 
 	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		t.Fatalf("Failed to create stderr pipe: %v", err)
-	}
+	assert.NoError(t, err, "Failed to create stderr pipe")
 
-	if err := cmd.Start(); err != nil {
-		t.Fatalf("Failed to start MCP server: %v", err)
-	}
+	err = cmd.Start()
+	assert.NoError(t, err, "Failed to start MCP server")
 
 	go func() {
 		stderrScanner := bufio.NewScanner(stderr)
@@ -103,13 +97,10 @@ func (s *MCPServerProcess) stop() error {
 // sendRequest sends a JSON-RPC request to the server
 func (s *MCPServerProcess) sendRequest(t *testing.T, req MCPRequest) MCPResponse {
 	reqJSON, err := json.Marshal(req)
-	if err != nil {
-		t.Fatalf("Failed to marshal request: %v", err)
-	}
+	assert.NoError(t, err, "Failed to marshal request")
 
-	if _, err := s.stdin.Write(append(reqJSON, '\n')); err != nil {
-		t.Fatalf("Failed to write request: %v", err)
-	}
+	_, err = s.stdin.Write(append(reqJSON, '\n'))
+	assert.NoError(t, err, "Failed to write request")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -139,9 +130,9 @@ func (s *MCPServerProcess) sendRequest(t *testing.T, req MCPRequest) MCPResponse
 	case resp := <-done:
 		return resp
 	case err := <-errChan:
-		t.Fatalf("Error reading response: %v", err)
+		assert.Fail(t, "Error reading response", err.Error())
 	case <-ctx.Done():
-		t.Fatalf("Timeout waiting for response")
+		assert.Fail(t, "Timeout waiting for response")
 	}
 
 	return MCPResponse{} // unreachable
@@ -166,22 +157,17 @@ func (s *MCPServerProcess) initialize(t *testing.T) {
 	}
 
 	resp := s.sendRequest(t, req)
-	if resp.Error != nil {
-		t.Fatalf("Initialize failed: %v", resp.Error.Message)
-	}
+	assert.Nil(t, resp.Error, "MCP initialize should not return an error")
 }
 
-// TestMCPServerIntegration tests the MCP server integration
+// TestMCPServerIntegration tests the MCP server integration using testdata/example
 func TestMCPServerIntegration(t *testing.T) {
-	// Get the project root directory
-	workspaceRoot, err := filepath.Abs("../../")
-	if err != nil {
-		t.Fatalf("Failed to get project root directory: %v", err)
-	}
+	// Use testdata/example as the workspace
+	workspaceRoot, err := filepath.Abs("../../testdata/example")
+	assert.NoError(t, err, "Failed to get testdata/example directory")
 
-	if _, err := os.Stat(filepath.Join(workspaceRoot, "go.mod")); os.IsNotExist(err) {
-		t.Fatalf("Not in a Go module directory, go.mod not found")
-	}
+	_, err = os.Stat(filepath.Join(workspaceRoot, "go.mod"))
+	assert.NoError(t, err, "testdata/example should be a Go module directory with go.mod")
 
 	server := startMCPServer(t, workspaceRoot)
 	defer server.stop()
@@ -196,19 +182,14 @@ func TestMCPServerIntegration(t *testing.T) {
 		}
 
 		resp := server.sendRequest(t, req)
-		if resp.Error != nil {
-			t.Fatalf("List tools failed: %v", resp.Error.Message)
-		}
+		assert.Nil(t, resp.Error, "List tools should not return an error")
 
 		var result map[string]any
-		if err := json.Unmarshal(resp.Result, &result); err != nil {
-			t.Fatalf("Failed to unmarshal tools list: %v", err)
-		}
+		err := json.Unmarshal(resp.Result, &result)
+		assert.NoError(t, err, "Should be able to unmarshal tools list")
 
 		tools, ok := result["tools"].([]any)
-		if !ok {
-			t.Fatalf("Expected tools array, got %T", result["tools"])
-		}
+		assert.True(t, ok, "Expected tools array, got %T", result["tools"])
 
 		expectedTools := []string{
 			"gopls.go_to_definition",
@@ -219,41 +200,36 @@ func TestMCPServerIntegration(t *testing.T) {
 			"gopls.rename_symbol",
 		}
 
-		if len(tools) != len(expectedTools) {
-			t.Errorf("Expected %d tools, got %d", len(expectedTools), len(tools))
-		}
+		assert.Len(t, tools, len(expectedTools), "Should have exactly %d tools", len(expectedTools))
 
+		// Verify all expected tools are present
+		foundTools := make(map[string]bool)
 		for _, tool := range tools {
 			toolMap, ok := tool.(map[string]any)
+			assert.True(t, ok, "Expected tool to be map, got %T", tool)
 			if !ok {
-				t.Errorf("Expected tool to be map, got %T", tool)
 				continue
 			}
 
 			name, ok := toolMap["name"].(string)
-			if !ok {
-				t.Errorf("Expected tool name to be string, got %T", toolMap["name"])
-				continue
+			assert.True(t, ok, "Expected tool name to be string, got %T", toolMap["name"])
+			if ok {
+				foundTools[name] = true
 			}
+		}
 
-			found := false
-			for _, expected := range expectedTools {
-				if name == expected {
-					found = true
-					break
-				}
-			}
-
-			if !found {
-				t.Errorf("Unexpected tool: %s", name)
-			}
+		// Check that all expected tools were found
+		for _, expectedTool := range expectedTools {
+			assert.True(t, foundTools[expectedTool], "Expected tool %s not found", expectedTool)
 		}
 	})
 
 	t.Run("GoToDefinition", func(t *testing.T) {
-		// Use main.go as test file - look for the "main" function definition
-		// TODO: create a test file for integration tests
-		mainFile := filepath.Join(workspaceRoot, "cmd", "gopls-mcp", "main.go")
+		// Test go to definition on "NewCalculator" function call in main.go
+		// main.go line 9: calc := NewCalculator(10.0)
+		//                        ^
+		//                     char 11 (0-based)
+		mainFile := filepath.Join(workspaceRoot, "main.go")
 
 		req := MCPRequest{
 			JSONRPC: "2.0",
@@ -263,24 +239,35 @@ func TestMCPServerIntegration(t *testing.T) {
 				"name": "gopls.go_to_definition",
 				"arguments": map[string]any{
 					"file_path": mainFile,
-					"line":      5,  // Approximate line where we might find a symbol
-					"character": 10, // Approximate character position
+					"line":      8,  // Zero-based: line 9 in editor
+					"character": 11, // Zero-based: position of "NewCalculator"
 				},
 			},
 		}
 
 		resp := server.sendRequest(t, req)
-		if resp.Error != nil {
-			t.Logf("Go to definition failed (expected for test): %v", resp.Error.Message)
-		} else {
-			t.Logf("Go to definition succeeded")
-		}
+		assert.Nil(t, resp.Error, "Go to definition should not return an error")
+
+		// Validate that we got a definition result
+		var result map[string]any
+		err := json.Unmarshal(resp.Result, &result)
+		assert.NoError(t, err, "Should be able to unmarshal go to definition result")
+
+		content, ok := result["content"]
+		assert.True(t, ok, "Expected content in go to definition result")
+		
+		// Should contain definition information
+		contentStr := fmt.Sprintf("%v", content)
+		assert.Contains(t, contentStr, "definition", "Response should contain definition information")
+		t.Logf("Go to definition content: %v", content)
 	})
 
 	t.Run("HoverInfo", func(t *testing.T) {
-		// Use main.go as test file
-		// TODO: create a test file for integration tests
-		mainFile := filepath.Join(workspaceRoot, "cmd", "gopls-mcp", "main.go")
+		// Test hover info on "Add" method call in main.go
+		// main.go line 14: result := calc.Add(5.0)
+		//                                ^
+		//                            char 19 (0-based)
+		mainFile := filepath.Join(workspaceRoot, "main.go")
 
 		req := MCPRequest{
 			JSONRPC: "2.0",
@@ -290,24 +277,36 @@ func TestMCPServerIntegration(t *testing.T) {
 				"name": "gopls.hover_info",
 				"arguments": map[string]any{
 					"file_path": mainFile,
-					"line":      10,
-					"character": 5,
+					"line":      13, // Zero-based: line 14 in editor
+					"character": 19, // Zero-based: position of "Add"
 				},
 			},
 		}
 
 		resp := server.sendRequest(t, req)
-		if resp.Error != nil {
-			t.Logf("Hover info failed (expected for test): %v", resp.Error.Message)
-		} else {
-			t.Logf("Hover info succeeded")
-		}
+		assert.Nil(t, resp.Error, "Hover info should not return an error")
+
+		// Validate that we got hover content
+		var result map[string]any
+		err := json.Unmarshal(resp.Result, &result)
+		assert.NoError(t, err, "Should be able to unmarshal hover result")
+
+		content, ok := result["content"]
+		assert.True(t, ok, "Expected hover content in result")
+		
+		// Should contain meaningful hover information
+		contentStr := fmt.Sprintf("%v", content)
+		assert.Contains(t, contentStr, "Add", "Hover should contain information about the Add method")
+		assert.Contains(t, contentStr, "float64", "Hover should show method signature with float64")
+		t.Logf("Hover info content: %v", content)
 	})
 
 	t.Run("FindReferences", func(t *testing.T) {
-		// Use main.go as test file
-		// TODO: create a test file for integration tests
-		mainFile := filepath.Join(workspaceRoot, "cmd", "gopls-mcp", "main.go")
+		// Test find references on Calculator type in calculator.go
+		// calculator.go line 6: type Calculator struct {
+		//                            ^
+		//                        char 5 (0-based)
+		calcFile := filepath.Join(workspaceRoot, "calculator.go")
 
 		req := MCPRequest{
 			JSONRPC: "2.0",
@@ -316,25 +315,38 @@ func TestMCPServerIntegration(t *testing.T) {
 			Params: map[string]any{
 				"name": "gopls.find_references",
 				"arguments": map[string]any{
-					"file_path": mainFile,
-					"line":      15,
-					"character": 10,
+					"file_path": calcFile,
+					"line":      5, // Zero-based: line 6 in editor
+					"character": 5, // Zero-based: position of "Calculator"
 				},
 			},
 		}
 
 		resp := server.sendRequest(t, req)
-		if resp.Error != nil {
-			t.Logf("Find references failed (expected for test): %v", resp.Error.Message)
-		} else {
-			t.Logf("Find references succeeded")
-		}
+		assert.Nil(t, resp.Error, "Find references should not return an error")
+
+		// Validate that we got find references content
+		var result map[string]any
+		err := json.Unmarshal(resp.Result, &result)
+		assert.NoError(t, err, "Should be able to unmarshal find references result")
+
+		content, ok := result["content"]
+		assert.True(t, ok, "Expected content in find references result")
+		
+		// Should contain reference information
+		contentStr := fmt.Sprintf("%v", content)
+		assert.Contains(t, contentStr, "reference", "Response should contain reference information")
+		assert.Contains(t, contentStr, "calculator.go", "Response should reference calculator.go file")
+		t.Logf("Find references content: %v", content)
 	})
 
 	t.Run("GetCompletion", func(t *testing.T) {
-		// Use main.go as test file
-		// TODO: create a test file for integration tests
-		mainFile := filepath.Join(workspaceRoot, "cmd", "gopls-mcp", "main.go")
+		// Test completion after "calc." in main.go
+		// We'll test at the end of line 14 after "calc."
+		// main.go line 14: result := calc.Add(5.0)
+		//                               ^
+		//                           char 20 (after the dot)
+		mainFile := filepath.Join(workspaceRoot, "main.go")
 
 		req := MCPRequest{
 			JSONRPC: "2.0",
@@ -344,85 +356,27 @@ func TestMCPServerIntegration(t *testing.T) {
 				"name": "gopls.get_completion",
 				"arguments": map[string]any{
 					"file_path": mainFile,
-					"line":      20,
-					"character": 5,
+					"line":      13, // Zero-based: line 14 in editor
+					"character": 20, // Zero-based: position after "calc."
 				},
 			},
 		}
 
 		resp := server.sendRequest(t, req)
-		if resp.Error != nil {
-			t.Logf("Get completion failed (expected for test): %v", resp.Error.Message)
-		} else {
-			t.Logf("Get completion succeeded")
-		}
-	})
-}
+		assert.Nil(t, resp.Error, "Get completion should not return an error")
 
-// TestMCPServerWithRealSymbols tests the MCP server with real symbols in the codebase
-func TestMCPServerWithRealSymbols(t *testing.T) {
-	// Get the project root directory
-	workspaceRoot, err := filepath.Abs("../../")
-	if err != nil {
-		t.Fatalf("Failed to get project root directory: %v", err)
-	}
+		// Validate that we got completion content
+		var result map[string]any
+		err := json.Unmarshal(resp.Result, &result)
+		assert.NoError(t, err, "Should be able to unmarshal completion result")
 
-	// Start the MCP server
-	server := startMCPServer(t, workspaceRoot)
-	defer server.stop()
-
-	// Initialize the server
-	server.initialize(t)
-
-	// Test hover info on a known symbol in main.go
-	t.Run("HoverInfoOnMainFunc", func(t *testing.T) {
-		mainFile := filepath.Join(workspaceRoot, "cmd", "gopls-mcp", "main.go")
-
-		// Read the main.go file to find the actual main function
-		content, err := os.ReadFile(mainFile)
-		if err != nil {
-			t.Fatalf("Failed to read main.go: %v", err)
-		}
-
-		lines := strings.Split(string(content), "\n")
-		var mainFuncLine int = -1
-		for i, line := range lines {
-			if strings.Contains(line, "func main()") {
-				mainFuncLine = i
-				break
-			}
-		}
-
-		if mainFuncLine == -1 {
-			t.Skip("Could not find main function in main.go")
-		}
-
-		req := MCPRequest{
-			JSONRPC: "2.0",
-			ID:      7,
-			Method:  "tools/call",
-			Params: map[string]any{
-				"name": "gopls.hover_info",
-				"arguments": map[string]any{
-					"file_path": mainFile,
-					"line":      mainFuncLine,
-					"character": 5, // Position on "main"
-				},
-			},
-		}
-
-		resp := server.sendRequest(t, req)
-		if resp.Error != nil {
-			t.Logf("Hover info on main function failed: %v", resp.Error.Message)
-		} else {
-			var result map[string]any
-			if err := json.Unmarshal(resp.Result, &result); err != nil {
-				t.Fatalf("Failed to unmarshal hover result: %v", err)
-			}
-
-			if content, ok := result["content"]; ok {
-				t.Logf("Hover info content: %v", content)
-			}
-		}
+		content, ok := result["content"]
+		assert.True(t, ok, "Expected content in completion result")
+		
+		// Should include completion information
+		contentStr := fmt.Sprintf("%v", content)
+		assert.Contains(t, contentStr, "completion", "Response should contain completion information")
+		assert.Contains(t, contentStr, "Add", "Completion should include Calculator.Add method")
+		t.Logf("Get completion content: %v", content)
 	})
 }
