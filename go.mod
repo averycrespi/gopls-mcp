@@ -1,4 +1,4 @@
-module gopls-mcp
+module github.com/averycrespi/gopls-mcp
 
 go 1.23
 

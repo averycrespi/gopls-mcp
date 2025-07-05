@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 
-	"gopls-mcp/internal/lsp"
-	"gopls-mcp/internal/tools"
-	"gopls-mcp/pkg/project"
-	"gopls-mcp/pkg/types"
+	"github.com/averycrespi/gopls-mcp/internal/lsp"
+	"github.com/averycrespi/gopls-mcp/internal/tools"
+	"github.com/averycrespi/gopls-mcp/pkg/project"
+	"github.com/averycrespi/gopls-mcp/pkg/types"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"

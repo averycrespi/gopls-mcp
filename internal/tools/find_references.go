@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"gopls-mcp/pkg/types"
+	"github.com/averycrespi/gopls-mcp/pkg/types"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )

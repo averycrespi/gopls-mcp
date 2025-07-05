@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"gopls-mcp/internal/server"
-	"gopls-mcp/pkg/types"
+	"github.com/averycrespi/gopls-mcp/internal/server"
+	"github.com/averycrespi/gopls-mcp/pkg/types"
 )
 
 func main() {

@@ -10,8 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"gopls-mcp/pkg/project"
-	"gopls-mcp/pkg/types"
+	"github.com/averycrespi/gopls-mcp/pkg/project"
+	"github.com/averycrespi/gopls-mcp/pkg/types"
 )
 
 var _ types.LSPClient = &Client{}

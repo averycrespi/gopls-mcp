@@ -6,7 +6,7 @@ import (
 	"log"
 	"sync"
 
-	"gopls-mcp/pkg/types"
+	"github.com/averycrespi/gopls-mcp/pkg/types"
 )
 
 // Manager manages the LSP client lifecycle
