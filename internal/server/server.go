@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
 	"gopls-mcp/internal/lsp"
 	"gopls-mcp/internal/tools"
 	"gopls-mcp/pkg/types"
+
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 )
 
 // Server represents the MCP server
@@ -22,7 +23,7 @@ type Server struct {
 
 // NewServer creates a new MCP server
 func NewServer(config *types.Config) *Server {
-	mcpServer := server.NewMCPServer("gopls-mcp", "1.0.0")
+	mcpServer := server.NewMCPServer("gopls-mcp", "0.0.1")
 	lspManager := lsp.NewManager(config.GoplsPath)
 
 	return &Server{
