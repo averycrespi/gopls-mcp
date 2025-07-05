@@ -1,6 +1,6 @@
 # gopls-mcp
 
-An MCP (Model Context Protocol) server that exposes the LSP functionality of the gopls language server, enabling LLMs to work with Go projects more effectively.
+An MCP (Model Context Protocol) server that exposes the LSP functionality of the [gopls](https://pkg.go.dev/golang.org/x/tools/gopls) language server, enabling LLMs to work with Go projects more effectively.
 
 ## Overview
 
@@ -12,7 +12,7 @@ gopls-mcp bridges the gap between LLMs and Go development by providing an MCP in
 - **go_to_definition**: Find the definition of a symbol in Go code
 - **find_references**: Find all references to a symbol across the project
 
-### Code Analysis Tools  
+### Code Analysis Tools
 - **hover_info**: Get detailed information about symbols (types, documentation, etc.)
 - **get_completion**: Get code completion suggestions at any position
 
@@ -26,11 +26,15 @@ gopls-mcp bridges the gap between LLMs and Go development by providing an MCP in
 - Go 1.23 or later
 - gopls (Go language server) - typically installed with `go install golang.org/x/tools/gopls@latest`
 
+### Direct Run (Recommended)
+```bash
+go run github.com/averycrespi/gopls-mcp@latest
+```
+
 ### Build from Source
 ```bash
-git clone <repository-url>
-cd gopls-mcp
-go build -o bin/gopls-mcp ./cmd/gopls-mcp
+git clone https://github.com/averycrespi/gopls-mcp && cd gopls-mcp
+make build
 ```
 
 ## Usage
@@ -52,13 +56,22 @@ Options:
 
 The server communicates via stdin/stdout using the MCP protocol. It can be integrated with any MCP-compatible client.
 
+#### Claude Code Integration
+
+Add the server to Claude Code:
+```bash
+claude mcp add gopls-mcp go run github.com/averycrespi/gopls-mcp@latest
+```
+
+#### Manual Configuration
+
 Example configuration:
 ```json
 {
   "mcpServers": {
     "gopls-mcp": {
-      "command": "/path/to/gopls-mcp",
-      "args": ["-workspace-root", "/path/to/your/go/project"]
+      "command": "go run github.com/averycrespi/gopls-mcp@latest",
+      "args": []
     }
   }
 }
@@ -71,7 +84,7 @@ Find where a symbol is defined.
 
 **Parameters:**
 - `file_path` (string): Path to the Go file
-- `line` (number): Line number (0-based)  
+- `line` (number): Line number (0-based)
 - `character` (number): Character position (0-based)
 
 ### find_references
@@ -110,7 +123,7 @@ Rename a symbol across the project.
 **Parameters:**
 - `file_path` (string): Path to the Go file
 - `line` (number): Line number (0-based)
-- `character` (number): Character position (0-based)  
+- `character` (number): Character position (0-based)
 - `new_name` (string): New name for the symbol
 
 ## Architecture
@@ -134,31 +147,21 @@ The server acts as a bridge:
 ### Project Structure
 ```
 gopls-mcp/
-├── cmd/gopls-mcp/          # Main application
+├── cmd/gopls-mcp/         # Main application
 ├── internal/
-│   ├── server/             # MCP server implementation
+│   ├── server/            # MCP server implementation
 │   └── lsp/               # LSP client wrapper
 ├── pkg/types/             # Shared types
 └── README.md
 ```
-
-### Dependencies
-- [github.com/mark3labs/mcp-go](https://github.com/mark3labs/mcp-go) - MCP server framework
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## License
-
-[Add license information]
 
 ## Related Projects
 
 - [gopls](https://github.com/golang/tools/tree/master/gopls) - Official Go language server
 - [MCP](https://modelcontextprotocol.io/) - Model Context Protocol specification
 - [mcp-go](https://github.com/mark3labs/mcp-go) - Go implementation of MCP
+- [mcp-gopls](https://github.com/hloiseaufcms/mcp-gopls) - MCP server for gopls
+
+## License
+
+MIT
