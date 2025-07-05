@@ -192,12 +192,12 @@ func TestMCPServerIntegration(t *testing.T) {
 		assert.True(t, ok, "Expected tools array, got %T", result["tools"])
 
 		expectedTools := []string{
-			"gopls.go_to_definition",
-			"gopls.find_references",
-			"gopls.hover_info",
-			"gopls.get_completion",
-			"gopls.format_code",
-			"gopls.rename_symbol",
+			"go_to_definition",
+			"find_references",
+			"hover_info",
+			"get_completion",
+			"format_code",
+			"rename_symbol",
 		}
 
 		assert.Len(t, tools, len(expectedTools), "Should have exactly %d tools", len(expectedTools))
@@ -236,7 +236,7 @@ func TestMCPServerIntegration(t *testing.T) {
 			ID:      3,
 			Method:  "tools/call",
 			Params: map[string]any{
-				"name": "gopls.go_to_definition",
+				"name": "go_to_definition",
 				"arguments": map[string]any{
 					"file_path": mainFile,
 					"line":      8,  // Zero-based: line 9 in editor
@@ -255,7 +255,7 @@ func TestMCPServerIntegration(t *testing.T) {
 
 		content, ok := result["content"]
 		assert.True(t, ok, "Expected content in go to definition result")
-		
+
 		// Should contain definition information
 		contentStr := fmt.Sprintf("%v", content)
 		assert.Contains(t, contentStr, "definition", "Response should contain definition information")
@@ -274,7 +274,7 @@ func TestMCPServerIntegration(t *testing.T) {
 			ID:      4,
 			Method:  "tools/call",
 			Params: map[string]any{
-				"name": "gopls.hover_info",
+				"name": "hover_info",
 				"arguments": map[string]any{
 					"file_path": mainFile,
 					"line":      13, // Zero-based: line 14 in editor
@@ -293,7 +293,7 @@ func TestMCPServerIntegration(t *testing.T) {
 
 		content, ok := result["content"]
 		assert.True(t, ok, "Expected hover content in result")
-		
+
 		// Should contain meaningful hover information
 		contentStr := fmt.Sprintf("%v", content)
 		assert.Contains(t, contentStr, "Add", "Hover should contain information about the Add method")
@@ -313,7 +313,7 @@ func TestMCPServerIntegration(t *testing.T) {
 			ID:      5,
 			Method:  "tools/call",
 			Params: map[string]any{
-				"name": "gopls.find_references",
+				"name": "find_references",
 				"arguments": map[string]any{
 					"file_path": calcFile,
 					"line":      5, // Zero-based: line 6 in editor
@@ -332,7 +332,7 @@ func TestMCPServerIntegration(t *testing.T) {
 
 		content, ok := result["content"]
 		assert.True(t, ok, "Expected content in find references result")
-		
+
 		// Should contain reference information
 		contentStr := fmt.Sprintf("%v", content)
 		assert.Contains(t, contentStr, "reference", "Response should contain reference information")
@@ -353,7 +353,7 @@ func TestMCPServerIntegration(t *testing.T) {
 			ID:      6,
 			Method:  "tools/call",
 			Params: map[string]any{
-				"name": "gopls.get_completion",
+				"name": "get_completion",
 				"arguments": map[string]any{
 					"file_path": mainFile,
 					"line":      13, // Zero-based: line 14 in editor
@@ -372,7 +372,7 @@ func TestMCPServerIntegration(t *testing.T) {
 
 		content, ok := result["content"]
 		assert.True(t, ok, "Expected content in completion result")
-		
+
 		// Should include completion information
 		contentStr := fmt.Sprintf("%v", content)
 		assert.Contains(t, contentStr, "completion", "Response should contain completion information")
