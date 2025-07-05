@@ -40,7 +40,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 
 **Tool Registration**: Each MCP tool is implemented in its own file in `internal/tools/`:
 - `go_to_definition.go` - `gopls.go_to_definition` → LSP Definition request
-- `find_references.go` - `gopls.find_references` → LSP References request  
+- `find_references.go` - `gopls.find_references` → LSP References request
 - `hover_info.go` - `gopls.hover_info` → LSP Hover request
 - `get_completion.go` - `gopls.get_completion` → LSP Completion request
 - `format_code.go` - `gopls.format_code` → LSP DocumentFormatting request
@@ -62,3 +62,13 @@ claude mcp add gopls-mcp go run github.com/averycrespi/gopls-mcp@latest
 ```
 
 All tools require `file_path`, `line`, and `character` parameters (0-based indexing) except `gopls.format_code` which only needs `file_path`.
+
+## Development Guidelines
+
+**IMPORTANT**: After making any code changes, always run these commands to ensure code quality:
+
+1. `make test` - Run unit tests to verify functionality
+2. `go fmt ./...` - Format Go code (if not using gofmt integration)
+3. `golangci-lint run` - Lint Go code for potential issues
+
+These commands must be run before committing changes to ensure the codebase remains stable and follows Go best practices.
