@@ -21,11 +21,11 @@ func (e *ExampleStruct) GetInfo() string {
 func main() {
 	result := ExampleFunction("World")
 	fmt.Println(result)
-	
+
 	example := &ExampleStruct{
 		Name:  "Test",
 		Value: 42,
 	}
-	
+
 	fmt.Println(example.GetInfo())
 }

@@ -24,7 +24,7 @@ type Server struct {
 func NewServer(config *types.Config) *Server {
 	mcpServer := server.NewMCPServer("gopls-mcp", "1.0.0")
 	lspManager := lsp.NewManager(config.GoplsPath)
-	
+
 	return &Server{
 		mcpServer:  mcpServer,
 		lspManager: lspManager,
@@ -37,15 +37,15 @@ func (s *Server) Start(ctx context.Context) error {
 	if err := s.registerTools(); err != nil {
 		return fmt.Errorf("failed to register tools: %w", err)
 	}
-	
+
 	if err := s.lspManager.Initialize(ctx, s.config.WorkspaceRoot); err != nil {
 		return fmt.Errorf("failed to initialize LSP manager: %w", err)
 	}
-	
+
 	s.initialized = true
-	
+
 	log.Printf("gopls-mcp server started with workspace: %s", s.config.WorkspaceRoot)
-	
+
 	return server.ServeStdio(s.mcpServer)
 }
 
@@ -58,7 +58,7 @@ func (s *Server) registerTools() error {
 	completionTool := tools.NewGetCompletionTool(nil, s.config)
 	formatTool := tools.NewFormatCodeTool(nil, s.config)
 	renameTool := tools.NewRenameSymbolTool(nil, s.config)
-	
+
 	// Register tools with custom handlers that inject the LSP client
 	s.mcpServer.AddTool(*goToDefTool.GetTool(), s.wrapHandler(goToDefTool.Handle))
 	s.mcpServer.AddTool(*findRefsTool.GetTool(), s.wrapHandler(findRefsTool.Handle))
@@ -66,7 +66,7 @@ func (s *Server) registerTools() error {
 	s.mcpServer.AddTool(*completionTool.GetTool(), s.wrapHandler(completionTool.Handle))
 	s.mcpServer.AddTool(*formatTool.GetTool(), s.wrapHandler(formatTool.Handle))
 	s.mcpServer.AddTool(*renameTool.GetTool(), s.wrapHandler(renameTool.Handle))
-	
+
 	return nil
 }
 
