@@ -19,59 +19,51 @@ var _ types.Server = &GoplsServer{}
 // GoplsServer represents the Gopls MCP server
 type GoplsServer struct {
 	mcpServer   *server.MCPServer
-	lspManager  *client.Manager
+	goplsClient *client.GoplsClient
 	config      *types.Config
-	initialized bool
 }
 
 // NewGoplsServer creates a new Gopls MCP server
 func NewGoplsServer(config *types.Config) *GoplsServer {
 	mcpServer := server.NewMCPServer(project.Name, project.Version)
-	lspManager := client.NewManager(config.GoplsPath)
+	goplsClient := client.NewGoplsClient(config.GoplsPath)
 
 	return &GoplsServer{
-		mcpServer:  mcpServer,
-		lspManager: lspManager,
-		config:     config,
+		mcpServer:   mcpServer,
+		goplsClient: goplsClient,
+		config:      config,
 	}
-}
-
-// RegisterTools registers the MCP tools
-func (s *GoplsServer) RegisterTools() error {
-	return s.registerTools()
 }
 
 // Start starts the Gopls MCP server
 func (s *GoplsServer) Start(ctx context.Context) error {
-	log.Printf("Starting %s v%s with config: %+v", project.Name, project.Version, s.config)
+	log.Printf("Starting Gopls MCP server with config: %+v", s.config)
 
-	// Initialize LSP manager in background (don't block MCP server startup)
-	go func() {
-		ctx := context.Background()
-		if err := s.lspManager.Initialize(ctx, s.config.WorkspaceRoot); err != nil {
-			log.Printf("Failed to initialize LSP manager: %v", err)
-			// Continue without LSP - tools will return appropriate errors
-		} else {
-			s.initialized = true
-			log.Printf("LSP manager initialized successfully")
-		}
-	}()
+	if err := s.goplsClient.Start(ctx, s.config.WorkspaceRoot); err != nil {
+		return fmt.Errorf("failed to start Gopls client: %w", err)
+	}
 
-	log.Printf("Running MCP server on stdio")
-	return server.ServeStdio(s.mcpServer)
+	if err := s.registerTools(); err != nil {
+		return fmt.Errorf("failed to register tools: %w", err)
+	}
+
+	if err := server.ServeStdio(s.mcpServer); err != nil {
+		return fmt.Errorf("failed to serve MCP server: %w", err)
+	}
+
+	return nil
 }
 
-// registerTools registers all MCP tools
 func (s *GoplsServer) registerTools() error {
-	// Create tool instances with nil client (will be set dynamically in handlers)
-	goToDefTool := tools.NewGoToDefinitionTool(nil, s.config)
-	findRefsTool := tools.NewFindReferencesTool(nil, s.config)
-	hoverTool := tools.NewHoverInfoTool(nil, s.config)
-	completionTool := tools.NewGetCompletionTool(nil, s.config)
-	formatTool := tools.NewFormatCodeTool(nil, s.config)
-	renameTool := tools.NewRenameSymbolTool(nil, s.config)
+	goToDefTool := tools.NewGoToDefinitionTool(s.goplsClient, s.config)
+	findRefsTool := tools.NewFindReferencesTool(s.goplsClient, s.config)
+	hoverTool := tools.NewHoverInfoTool(s.goplsClient, s.config)
+	completionTool := tools.NewGetCompletionTool(s.goplsClient, s.config)
+	formatTool := tools.NewFormatCodeTool(s.goplsClient, s.config)
+	renameTool := tools.NewRenameSymbolTool(s.goplsClient, s.config)
 
 	// Register tools with custom handlers that inject the LSP client
+	// TODO: remove these
 	s.mcpServer.AddTool(*goToDefTool.GetTool(), s.wrapHandler(goToDefTool.Handle))
 	s.mcpServer.AddTool(*findRefsTool.GetTool(), s.wrapHandler(findRefsTool.Handle))
 	s.mcpServer.AddTool(*hoverTool.GetTool(), s.wrapHandler(hoverTool.Handle))
@@ -85,22 +77,15 @@ func (s *GoplsServer) registerTools() error {
 // wrapHandler wraps tool handlers to inject the LSP client dynamically
 func (s *GoplsServer) wrapHandler(handler func(context.Context, types.Client, *types.Config, mcp.CallToolRequest) (*mcp.CallToolResult, error)) func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		lspClient := s.lspManager.GetClient()
-		if lspClient == nil && s.lspManager.IsInitialized() {
-			// LSP manager is initialized but client is nil, something is wrong
-			return mcp.NewToolResultError("LSP client is unavailable"), nil
-		}
-		return handler(ctx, lspClient, s.config, req)
+		return handler(ctx, s.goplsClient, s.config, req)
 	}
 }
 
 // Shutdown gracefully shuts down the server
 func (s *GoplsServer) Shutdown(ctx context.Context) error {
-	if s.initialized {
-		if err := s.lspManager.Shutdown(ctx); err != nil {
-			return fmt.Errorf("failed to shutdown LSP manager: %w", err)
-		}
-		s.initialized = false
+	if err := s.goplsClient.Shutdown(ctx); err != nil {
+		return fmt.Errorf("failed to shutdown Gopls client: %w", err)
 	}
+
 	return nil
 }

@@ -34,16 +34,11 @@ func main() {
 		config.WorkspaceRoot = absPath
 	}
 
-	mcpServer := server.NewGoplsServer(config)
-
-	if err := mcpServer.RegisterTools(); err != nil {
-		log.Fatalf("Failed to register tools: %v", err)
+	srv := server.NewGoplsServer(config)
+	if err := srv.Start(context.Background()); err != nil {
+		log.Fatalf("Failed to start Gopls MCP server: %v", err)
 	}
 
-	if err := mcpServer.Start(context.Background()); err != nil {
-		log.Fatalf("Server error: %v", err)
-	}
-
-	fmt.Println("Server stopped")
+	fmt.Println("Gopls MCP server stopped")
 	os.Exit(0)
 }

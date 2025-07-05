@@ -40,8 +40,8 @@ func NewGoplsClient(goplsPath string) *GoplsClient {
 }
 
 // Start starts the gopls process
-func (c *GoplsClient) Start(ctx context.Context, goplsPath string) error {
-	c.cmd = exec.CommandContext(ctx, goplsPath, "serve")
+func (c *GoplsClient) Start(ctx context.Context, workspaceRoot string) error {
+	c.cmd = exec.CommandContext(ctx, c.goplsPath, "serve")
 
 	stdin, err := c.cmd.StdinPipe()
 	if err != nil {
@@ -67,11 +67,15 @@ func (c *GoplsClient) Start(ctx context.Context, goplsPath string) error {
 
 	c.transport.Listen()
 
+	rootURI := "file://" + workspaceRoot
+	if err := c.initialize(rootURI); err != nil {
+		return fmt.Errorf("failed to initialize: %w", err)
+	}
+
 	return nil
 }
 
-// Initialize initializes the LSP client
-func (c *GoplsClient) Initialize(ctx context.Context, rootURI string) error {
+func (c *GoplsClient) initialize(rootURI string) error {
 	params := map[string]any{
 		"processId": nil,
 		"clientInfo": map[string]any{
@@ -84,11 +88,14 @@ func (c *GoplsClient) Initialize(ctx context.Context, rootURI string) error {
 
 	_, err := c.transport.SendRequest("initialize", params)
 	if err != nil {
-		return fmt.Errorf("failed to initialize: %w", err)
+		return fmt.Errorf("failed to send initialization request: %w", err)
 	}
 
-	// Send initialized notification
-	return c.transport.SendNotification("initialized", map[string]any{})
+	if err := c.transport.SendNotification("initialized", map[string]any{}); err != nil {
+		return fmt.Errorf("failed to send initialization notification: %w", err)
+	}
+
+	return nil
 }
 
 func (c *GoplsClient) GoToDefinition(ctx context.Context, uri string, position types.Position) ([]types.Location, error) {

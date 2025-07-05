@@ -5,6 +5,20 @@ import (
 	"encoding/json"
 )
 
+// Client defines the LSP client interface
+type Client interface {
+	Start(ctx context.Context, workspaceRoot string) error
+	Shutdown(ctx context.Context) error
+
+	GoToDefinition(ctx context.Context, uri string, position Position) ([]Location, error)
+	FindReferences(ctx context.Context, uri string, position Position) ([]Location, error)
+	Hover(ctx context.Context, uri string, position Position) (string, error)
+	GetDiagnostics(ctx context.Context, uri string) ([]Diagnostic, error)
+	GetCompletion(ctx context.Context, uri string, position Position) ([]CompletionItem, error)
+	FormatDocument(ctx context.Context, uri string) ([]json.RawMessage, error)
+	RenameSymbol(ctx context.Context, uri string, position Position, newName string) (map[string][]json.RawMessage, error)
+}
+
 // Position represents a position in a text document
 type Position struct {
 	Line      int `json:"line"`
@@ -43,24 +57,4 @@ type CompletionItem struct {
 	Label  string `json:"label"`
 	Kind   int    `json:"kind"`
 	Detail string `json:"detail,omitempty"`
-}
-
-// Config represents the configuration for the gopls-mcp server
-type Config struct {
-	GoplsPath     string `json:"gopls_path,omitempty"`
-	WorkspaceRoot string `json:"workspace_root"`
-	LogLevel      string `json:"log_level,omitempty"`
-}
-
-// Client defines the LSP client interface
-type Client interface {
-	Initialize(ctx context.Context, rootURI string) error
-	GoToDefinition(ctx context.Context, uri string, position Position) ([]Location, error)
-	FindReferences(ctx context.Context, uri string, position Position) ([]Location, error)
-	Hover(ctx context.Context, uri string, position Position) (string, error)
-	GetDiagnostics(ctx context.Context, uri string) ([]Diagnostic, error)
-	GetCompletion(ctx context.Context, uri string, position Position) ([]CompletionItem, error)
-	FormatDocument(ctx context.Context, uri string) ([]json.RawMessage, error)
-	RenameSymbol(ctx context.Context, uri string, position Position, newName string) (map[string][]json.RawMessage, error)
-	Shutdown(ctx context.Context) error
 }
