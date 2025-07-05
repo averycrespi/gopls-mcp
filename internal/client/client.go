@@ -178,8 +178,19 @@ func (c *GoplsClient) FindReferences(ctx context.Context, uri string, position t
 		return nil, fmt.Errorf("failed to find references: %w", err)
 	}
 
+	// LSP references response can be null or Location[]
+	var rawResponse json.RawMessage
+	if err := json.Unmarshal(response, &rawResponse); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal references response: %w", err)
+	}
+
+	// Handle null response
+	if string(rawResponse) == "null" {
+		return []types.Location{}, nil
+	}
+
 	var locations []types.Location
-	if err := json.Unmarshal(response, &locations); err != nil {
+	if err := json.Unmarshal(rawResponse, &locations); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal references response: %w", err)
 	}
 
