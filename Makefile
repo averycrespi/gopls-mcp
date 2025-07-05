@@ -1,4 +1,4 @@
-.PHONY: build test clean install help run
+.PHONY: build test test-integration clean install help run
 
 # Default target
 all: build
@@ -7,21 +7,13 @@ all: build
 build:
 	go build -o bin/gopls-mcp ./cmd/gopls-mcp
 
-# Run tests
+# Run unit tests
 test:
 	go test ./...
 
 # Run integration tests
-test-integration: build
-	@echo "Testing binary exists and is executable..."
-	@test -x bin/gopls-mcp || (echo "ERROR: Binary not found or not executable" && exit 1)
-	@echo "Running unit tests..."
-	@go test ./...
-	@echo "Checking gopls is available..."
-	@command -v gopls >/dev/null || (echo "ERROR: gopls not found in PATH. Install with: go install golang.org/x/tools/gopls@latest" && exit 1)
-	@echo "Running full integration tests..."
-	@go test -v ./internal/server -run TestMCPServer
-	@echo "All integration tests passed! ✅"
+test-integration:
+	go test -tags=integration ./...
 
 # Clean build artifacts
 clean:

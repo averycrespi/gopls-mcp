@@ -1,4 +1,6 @@
-package server
+//go:build integration
+
+package main
 
 import (
 	"bufio"
@@ -48,14 +50,7 @@ type MCPServerProcess struct {
 
 // startMCPServer starts the MCP server process
 func startMCPServer(t *testing.T, workspaceRoot string) *MCPServerProcess {
-	// Build from root directory (go up two levels from internal/server)
-	buildCmd := exec.Command("make", "build")
-	buildCmd.Dir = "../../"
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build MCP server: %v", err)
-	}
-
-	cmd := exec.Command("../../bin/gopls-mcp", "-workspace-root", workspaceRoot, "-log-level", "debug")
+	cmd := exec.Command("go", "run", "main.go", "-workspace-root", workspaceRoot, "-log-level", "debug")
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -178,7 +173,7 @@ func (s *MCPServerProcess) initialize(t *testing.T) {
 
 // TestMCPServerIntegration tests the MCP server integration
 func TestMCPServerIntegration(t *testing.T) {
-	// Get the project root directory (go up two levels from internal/server)
+	// Get the project root directory
 	workspaceRoot, err := filepath.Abs("../../")
 	if err != nil {
 		t.Fatalf("Failed to get project root directory: %v", err)
@@ -366,7 +361,7 @@ func TestMCPServerIntegration(t *testing.T) {
 
 // TestMCPServerWithRealSymbols tests the MCP server with real symbols in the codebase
 func TestMCPServerWithRealSymbols(t *testing.T) {
-	// Get the project root directory (go up two levels from internal/server)
+	// Get the project root directory
 	workspaceRoot, err := filepath.Abs("../../")
 	if err != nil {
 		t.Fatalf("Failed to get project root directory: %v", err)
