@@ -24,7 +24,7 @@ func NewFindReferencesTool(lspClient types.LSPClient, config *types.Config) *Fin
 
 // GetTool returns the MCP tool definition
 func (t *FindReferencesTool) GetTool() *mcp.Tool {
-	tool := mcp.NewTool("gopls.find_references",
+	tool := mcp.NewTool(ToolFindReferences,
 		mcp.WithDescription("Find all references to a symbol in Go code"),
 		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
 		mcp.WithNumber("line", mcp.Required(), mcp.Description("Line number (0-based)")),

@@ -24,7 +24,7 @@ func NewGoToDefinitionTool(lspClient types.LSPClient, config *types.Config) *GoT
 
 // GetTool returns the MCP tool definition
 func (t *GoToDefinitionTool) GetTool() *mcp.Tool {
-	tool := mcp.NewTool("gopls.go_to_definition",
+	tool := mcp.NewTool(ToolGoToDefinition,
 		mcp.WithDescription("Find the definition of a symbol in Go code"),
 		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
 		mcp.WithNumber("line", mcp.Required(), mcp.Description("Line number (0-based)")),

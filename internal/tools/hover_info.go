@@ -24,7 +24,7 @@ func NewHoverInfoTool(lspClient types.LSPClient, config *types.Config) *HoverInf
 
 // GetTool returns the MCP tool definition
 func (t *HoverInfoTool) GetTool() *mcp.Tool {
-	tool := mcp.NewTool("gopls.hover_info",
+	tool := mcp.NewTool(ToolHoverInfo,
 		mcp.WithDescription("Get hover information for a symbol in Go code"),
 		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
 		mcp.WithNumber("line", mcp.Required(), mcp.Description("Line number (0-based)")),

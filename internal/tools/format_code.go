@@ -24,7 +24,7 @@ func NewFormatCodeTool(lspClient types.LSPClient, config *types.Config) *FormatC
 
 // GetTool returns the MCP tool definition
 func (t *FormatCodeTool) GetTool() *mcp.Tool {
-	tool := mcp.NewTool("gopls.format_code",
+	tool := mcp.NewTool(ToolFormatCode,
 		mcp.WithDescription("Format Go code using gofmt"),
 		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
 	)

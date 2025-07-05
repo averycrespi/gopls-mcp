@@ -24,7 +24,7 @@ func NewGetCompletionTool(lspClient types.LSPClient, config *types.Config) *GetC
 
 // GetTool returns the MCP tool definition
 func (t *GetCompletionTool) GetTool() *mcp.Tool {
-	tool := mcp.NewTool("gopls.get_completion",
+	tool := mcp.NewTool(ToolGetCompletion,
 		mcp.WithDescription("Get code completion suggestions for Go code"),
 		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
 		mcp.WithNumber("line", mcp.Required(), mcp.Description("Line number (0-based)")),

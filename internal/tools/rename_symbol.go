@@ -24,7 +24,7 @@ func NewRenameSymbolTool(lspClient types.LSPClient, config *types.Config) *Renam
 
 // GetTool returns the MCP tool definition
 func (t *RenameSymbolTool) GetTool() *mcp.Tool {
-	tool := mcp.NewTool("gopls.rename_symbol",
+	tool := mcp.NewTool(ToolRenameSymbol,
 		mcp.WithDescription("Rename a symbol across the Go project"),
 		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
 		mcp.WithNumber("line", mcp.Required(), mcp.Description("Line number (0-based)")),
