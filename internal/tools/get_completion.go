@@ -12,11 +12,11 @@ import (
 // GetCompletionTool handles code completion requests
 type GetCompletionTool struct {
 	client types.Client
-	config *types.Config
+	config types.Config
 }
 
 // NewGetCompletionTool creates a new code completion tool
-func NewGetCompletionTool(client types.Client, config *types.Config) *GetCompletionTool {
+func NewGetCompletionTool(client types.Client, config types.Config) *GetCompletionTool {
 	return &GetCompletionTool{
 		client: client,
 		config: config,

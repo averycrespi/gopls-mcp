@@ -35,10 +35,10 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - `internal/transport/transport.go` - JSON-RPC transport layer for LSP communication
 - `internal/tools/` - Individual tool implementations (one file per MCP tool)
 - `pkg/types/` - Shared type definitions split into domain files:
-  - `client.go` - LSP client interface and related types (includes Start/Shutdown methods)
-  - `server.go` - Server interface for MCP operations
-  - `config.go` - Configuration structure for server settings
-  - `transport.go` - Transport interface for JSON-RPC communication
+  - `client.go` - LSP client interface and related types (includes Start/Stop methods)
+  - `server.go` - Server interface for MCP operations (Serve method)
+  - `config.go` - Configuration structure (used as value type)
+  - `transport.go` - Transport interface for JSON-RPC communication (Start/Stop methods)
 
 ### Key Design Patterns
 
@@ -52,10 +52,12 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - `tools.go` - Shared utilities for path handling and position parsing
 
 **Interface Design**: The codebase uses clean interfaces to separate concerns:
-- `types.Client` - Defines LSP client operations including Start/Shutdown (implemented by GoplsClient)
-- `types.Server` - Defines MCP server operations (implemented by GoplsServer)
-- `types.Transport` - Defines JSON-RPC transport operations (implemented by JsonRpcTransport)
-- `types.Config` - Configuration structure separated for better organization
+- `types.Client` - Defines LSP client operations including Start/Stop (implemented by GoplsClient)
+- `types.Server` - Defines MCP server operations with Serve method (implemented by GoplsServer)
+- `types.Transport` - Defines JSON-RPC transport operations with Start/Stop methods (implemented by JsonRpcTransport)
+- `types.Config` - Configuration structure used as value type for better immutability
+
+**Value vs Pointer Types**: The design uses value types for Config to ensure immutability and prevent accidental modifications, while interfaces provide the abstraction layer for different implementations.
 
 **Path Handling**: All file paths are converted to absolute paths and file:// URIs for LSP communication.
 

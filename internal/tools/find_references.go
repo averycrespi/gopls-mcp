@@ -12,11 +12,11 @@ import (
 // FindReferencesTool handles find-references requests
 type FindReferencesTool struct {
 	client types.Client
-	config *types.Config
+	config types.Config
 }
 
 // NewFindReferencesTool creates a new find-references tool
-func NewFindReferencesTool(client types.Client, config *types.Config) *FindReferencesTool {
+func NewFindReferencesTool(client types.Client, config types.Config) *FindReferencesTool {
 	return &FindReferencesTool{
 		client: client,
 		config: config,

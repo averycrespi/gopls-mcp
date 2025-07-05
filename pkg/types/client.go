@@ -8,7 +8,7 @@ import (
 // Client defines the LSP client interface
 type Client interface {
 	Start(ctx context.Context, workspaceRoot string) error
-	Shutdown(ctx context.Context) error
+	Stop(ctx context.Context) error
 
 	GoToDefinition(ctx context.Context, uri string, position Position) ([]Location, error)
 	FindReferences(ctx context.Context, uri string, position Position) ([]Location, error)

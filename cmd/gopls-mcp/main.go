@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -20,25 +19,26 @@ func main() {
 	)
 	flag.Parse()
 
-	config := &types.Config{
+	config := types.Config{
 		GoplsPath:     *goplsPath,
 		WorkspaceRoot: *workspaceRoot,
 		LogLevel:      *logLevel,
 	}
 
+	// Ensure the workspace root is a valid directory
 	if stat, err := os.Stat(config.WorkspaceRoot); err != nil || !stat.IsDir() {
 		log.Fatalf("Invalid workspace root: %s", config.WorkspaceRoot)
 	}
 
+	// Ensure the workspace root is an absolute path
 	if absPath, err := filepath.Abs(config.WorkspaceRoot); err == nil {
 		config.WorkspaceRoot = absPath
 	}
 
 	srv := server.NewGoplsServer(config)
-	if err := srv.Start(context.Background()); err != nil {
-		log.Fatalf("Failed to start Gopls MCP server: %v", err)
+	if err := srv.Serve(context.Background()); err != nil {
+		log.Fatalf("Failed to serve Gopls MCP server: %v", err)
 	}
 
-	fmt.Println("Gopls MCP server stopped")
 	os.Exit(0)
 }

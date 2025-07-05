@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
-	"time"
 
 	"github.com/averycrespi/gopls-mcp/internal/transport"
 	"github.com/averycrespi/gopls-mcp/pkg/project"
@@ -15,7 +14,6 @@ import (
 
 const (
 	defaultGoplsPath = "gopls"
-	goplsStartDelay  = 100 * time.Millisecond
 )
 
 var _ types.Client = &GoplsClient{}
@@ -39,7 +37,7 @@ func NewGoplsClient(goplsPath string) *GoplsClient {
 	}
 }
 
-// Start starts the gopls process
+// Start starts the Gopls client
 func (c *GoplsClient) Start(ctx context.Context, workspaceRoot string) error {
 	c.cmd = exec.CommandContext(ctx, c.goplsPath, "serve")
 
@@ -62,14 +60,16 @@ func (c *GoplsClient) Start(ctx context.Context, workspaceRoot string) error {
 	c.transport = transport.NewJsonRpcTransport(stdin, stdout)
 
 	if err := c.cmd.Start(); err != nil {
-		return fmt.Errorf("failed to start gopls: %w", err)
+		return fmt.Errorf("failed to start gopls command: %w", err)
 	}
 
-	c.transport.Listen()
+	if err := c.transport.Start(); err != nil {
+		return fmt.Errorf("failed to start transport: %w", err)
+	}
 
 	rootURI := "file://" + workspaceRoot
 	if err := c.initialize(rootURI); err != nil {
-		return fmt.Errorf("failed to initialize: %w", err)
+		return fmt.Errorf("failed to initialize Gopls client: %w", err)
 	}
 
 	return nil
@@ -93,6 +93,32 @@ func (c *GoplsClient) initialize(rootURI string) error {
 
 	if err := c.transport.SendNotification("initialized", map[string]any{}); err != nil {
 		return fmt.Errorf("failed to send initialization notification: %w", err)
+	}
+
+	return nil
+}
+
+func (c *GoplsClient) Stop(ctx context.Context) error {
+	_, err := c.transport.SendRequest("shutdown", nil)
+	if err != nil {
+		return fmt.Errorf("failed to send JSON-RPC shutdown request: %w", err)
+	}
+
+	if err := c.transport.SendNotification("exit", nil); err != nil {
+		return fmt.Errorf("failed to send JSON-RPC exit notification: %w", err)
+	}
+
+	if err := c.transport.Stop(); err != nil {
+		return fmt.Errorf("failed to stop transport: %w", err)
+	}
+
+	if c.cmd != nil && c.cmd.Process != nil {
+		if err := c.cmd.Process.Kill(); err != nil {
+			return fmt.Errorf("failed to kill gopls process: %w", err)
+		}
+		if _, err := c.cmd.Process.Wait(); err != nil {
+			return fmt.Errorf("failed to wait for gopls process: %w", err)
+		}
 	}
 
 	return nil
@@ -268,26 +294,4 @@ func (c *GoplsClient) RenameSymbol(ctx context.Context, uri string, position typ
 	}
 
 	return workspaceEdit.Changes, nil
-}
-
-func (c *GoplsClient) Shutdown(ctx context.Context) error {
-	_, err := c.transport.SendRequest("shutdown", nil)
-	if err != nil {
-		return fmt.Errorf("failed to shutdown: %w", err)
-	}
-
-	// Send exit notification
-	if err := c.transport.SendNotification("exit", nil); err != nil {
-		return fmt.Errorf("failed to send exit notification: %w", err)
-	}
-
-	// Close the transport
-	c.transport.Close()
-
-	if c.cmd != nil && c.cmd.Process != nil {
-		_ = c.cmd.Process.Kill()
-		_ = c.cmd.Wait()
-	}
-
-	return nil
 }

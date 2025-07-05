@@ -12,11 +12,11 @@ import (
 // FormatCodeTool handles code formatting requests
 type FormatCodeTool struct {
 	client types.Client
-	config *types.Config
+	config types.Config
 }
 
 // NewFormatCodeTool creates a new code formatting tool
-func NewFormatCodeTool(client types.Client, config *types.Config) *FormatCodeTool {
+func NewFormatCodeTool(client types.Client, config types.Config) *FormatCodeTool {
 	return &FormatCodeTool{
 		client: client,
 		config: config,

@@ -28,7 +28,7 @@ type JsonRpcTransport struct {
 	done      chan struct{}
 }
 
-// NewJsonRpcTransport creates a new transport instance
+// NewJsonRpcTransport creates a new JSON-RPC transport
 func NewJsonRpcTransport(writer io.Writer, reader io.Reader) *JsonRpcTransport {
 	return &JsonRpcTransport{
 		writer:    writer,
@@ -38,13 +38,19 @@ func NewJsonRpcTransport(writer io.Writer, reader io.Reader) *JsonRpcTransport {
 	}
 }
 
-// Listen reads responses in the background until the transport is closed
-func (t *JsonRpcTransport) Listen() {
+func (t *JsonRpcTransport) Start() error {
 	go t.readResponses()
+	return nil
 }
 
-// IsClosed checks if the transport is closed
-func (t *JsonRpcTransport) IsClosed() bool {
+func (t *JsonRpcTransport) Stop() error {
+	if !t.isDone() {
+		close(t.done)
+	}
+	return nil
+}
+
+func (t *JsonRpcTransport) isDone() bool {
 	select {
 	case <-t.done:
 		return true
@@ -53,19 +59,12 @@ func (t *JsonRpcTransport) IsClosed() bool {
 	}
 }
 
-// Close closes the transport
-func (t *JsonRpcTransport) Close() {
-	if !t.IsClosed() {
-		close(t.done)
-	}
-}
-
 func (t *JsonRpcTransport) readResponses() {
-	defer t.Close()
+	defer t.Stop()
 
 	for {
 		// Read one response at a time until the transport is closed
-		if t.IsClosed() {
+		if t.isDone() {
 			return
 		}
 

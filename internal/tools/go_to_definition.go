@@ -12,11 +12,11 @@ import (
 // GoToDefinitionTool handles go-to-definition requests
 type GoToDefinitionTool struct {
 	client types.Client
-	config *types.Config
+	config types.Config
 }
 
 // NewGoToDefinitionTool creates a new go-to-definition tool
-func NewGoToDefinitionTool(client types.Client, config *types.Config) *GoToDefinitionTool {
+func NewGoToDefinitionTool(client types.Client, config types.Config) *GoToDefinitionTool {
 	return &GoToDefinitionTool{
 		client: client,
 		config: config,

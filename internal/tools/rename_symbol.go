@@ -12,11 +12,11 @@ import (
 // RenameSymbolTool handles symbol renaming requests
 type RenameSymbolTool struct {
 	client types.Client
-	config *types.Config
+	config types.Config
 }
 
 // NewRenameSymbolTool creates a new symbol renaming tool
-func NewRenameSymbolTool(client types.Client, config *types.Config) *RenameSymbolTool {
+func NewRenameSymbolTool(client types.Client, config types.Config) *RenameSymbolTool {
 	return &RenameSymbolTool{
 		client: client,
 		config: config,

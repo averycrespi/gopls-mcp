@@ -137,10 +137,15 @@ Rename a symbol across the project.
 ```
 
 The server acts as a bridge:
-1. GoplsServer receives MCP tool calls from clients
-2. Tools translate requests to LSP operations via GoplsClient
-3. GoplsClient communicates with gopls via JSON-RPC transport
+1. GoplsServer.Serve() receives MCP tool calls from clients
+2. Tools translate requests to LSP operations via GoplsClient interface
+3. GoplsClient communicates with gopls via JsonRpcTransport
 4. Returns formatted responses to the MCP client
+
+### Design Principles
+- **Interface-based design**: Clean separation of concerns through well-defined interfaces
+- **Value types for immutability**: Config is passed as value type to prevent modification
+- **Direct tool injection**: Tools receive client reference at creation time for simplicity
 
 ## Development
 

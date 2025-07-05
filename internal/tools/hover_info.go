@@ -12,11 +12,11 @@ import (
 // HoverInfoTool handles hover-info requests
 type HoverInfoTool struct {
 	client types.Client
-	config *types.Config
+	config types.Config
 }
 
 // NewHoverInfoTool creates a new hover-info tool
-func NewHoverInfoTool(client types.Client, config *types.Config) *HoverInfoTool {
+func NewHoverInfoTool(client types.Client, config types.Config) *HoverInfoTool {
 	return &HoverInfoTool{
 		client: client,
 		config: config,

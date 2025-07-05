@@ -4,9 +4,9 @@ import "encoding/json"
 
 // Transport defines transport layer interface
 type Transport interface {
-	Listen()
-	IsClosed() bool
-	Close()
+	Start() error
+	Stop() error
+
 	SendRequest(method string, params any) (json.RawMessage, error)
 	SendNotification(method string, params any) error
 }
