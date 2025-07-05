@@ -11,35 +11,31 @@ import (
 
 // HoverInfoTool handles hover-info requests
 type HoverInfoTool struct {
-	lspClient types.Client
-	config    *types.Config
+	client types.Client
+	config *types.Config
 }
 
 // NewHoverInfoTool creates a new hover-info tool
-func NewHoverInfoTool(lspClient types.Client, config *types.Config) *HoverInfoTool {
+func NewHoverInfoTool(client types.Client, config *types.Config) *HoverInfoTool {
 	return &HoverInfoTool{
-		lspClient: lspClient,
-		config:    config,
+		client: client,
+		config: config,
 	}
 }
 
 // GetTool returns the MCP tool definition
-func (t *HoverInfoTool) GetTool() *mcp.Tool {
+func (t *HoverInfoTool) GetTool() mcp.Tool {
 	tool := mcp.NewTool(ToolHoverInfo,
 		mcp.WithDescription("Get hover information for a symbol in Go code"),
 		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
 		mcp.WithNumber("line", mcp.Required(), mcp.Description("Line number (0-based)")),
 		mcp.WithNumber("character", mcp.Required(), mcp.Description("Character position (0-based)")),
 	)
-	return &tool
+	return tool
 }
 
 // Handle processes the tool request
-func (t *HoverInfoTool) Handle(ctx context.Context, lspClient types.Client, config *types.Config, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	if lspClient == nil {
-		return mcp.NewToolResultError("LSP client not initialized"), nil
-	}
-
+func (t *HoverInfoTool) Handle(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	filePath := mcp.ParseString(req, "file_path", "")
 	if filePath == "" {
 		return mcp.NewToolResultError("file_path parameter is required"), nil
@@ -50,8 +46,8 @@ func (t *HoverInfoTool) Handle(ctx context.Context, lspClient types.Client, conf
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	uri := getFileURI(filePath, config.WorkspaceRoot)
-	hover, err := lspClient.Hover(ctx, uri, position)
+	uri := getFileURI(filePath, t.config.WorkspaceRoot)
+	hover, err := t.client.Hover(ctx, uri, position)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to get hover info: %v", err)), nil
 	}

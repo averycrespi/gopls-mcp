@@ -137,9 +137,9 @@ Rename a symbol across the project.
 ```
 
 The server acts as a bridge:
-1. Receives MCP tool calls from clients
-2. Translates them to LSP requests
-3. Communicates with gopls via JSON-RPC
+1. GoplsServer receives MCP tool calls from clients
+2. Tools translate requests to LSP operations via GoplsClient
+3. GoplsClient communicates with gopls via JSON-RPC transport
 4. Returns formatted responses to the MCP client
 
 ## Development
@@ -150,11 +150,11 @@ gopls-mcp/
 ├── cmd/gopls-mcp/         # Main application entry point
 ├── internal/
 │   ├── server/            # MCP server implementation (GoplsServer)
-│   ├── client/            # LSP client wrapper and manager
-│   ├── transport/         # JSON-RPC transport layer
+│   ├── client/            # LSP client implementation (GoplsClient)
+│   ├── transport/         # JSON-RPC transport layer (JsonRpcTransport)
 │   └── tools/             # Individual MCP tool implementations
 ├── pkg/
-│   ├── types/             # Shared type definitions (client, server, transport)
+│   ├── types/             # Shared type definitions (client, server, config, transport)
 │   └── project/           # Project metadata
 ├── testdata/              # Test fixtures for integration tests
 └── README.md

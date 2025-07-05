@@ -27,17 +27,17 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 
 ### Core Components
 
-**Main Flow**: MCP Client → MCP Server → Client Manager → Gopls Client → Transport → gopls binary
+**Main Flow**: MCP Client → GoplsServer → GoplsClient → Transport → gopls binary
 
 - `cmd/gopls-mcp/main.go` - Entry point, handles CLI flags and server lifecycle
-- `internal/server/server.go` - MCP server implementation (GoplsServer) and tool registration
-- `internal/client/manager.go` - Manages LSP client lifecycle and thread safety
+- `internal/server/server.go` - MCP server implementation (GoplsServer) with direct client usage
 - `internal/client/client.go` - Gopls client that communicates with gopls via JSON-RPC
 - `internal/transport/transport.go` - JSON-RPC transport layer for LSP communication
 - `internal/tools/` - Individual tool implementations (one file per MCP tool)
 - `pkg/types/` - Shared type definitions split into domain files:
-  - `client.go` - LSP client interface and related types
-  - `server.go` - Server interface and configuration types
+  - `client.go` - LSP client interface and related types (includes Start/Shutdown methods)
+  - `server.go` - Server interface for MCP operations
+  - `config.go` - Configuration structure for server settings
   - `transport.go` - Transport interface for JSON-RPC communication
 
 ### Key Design Patterns
@@ -51,12 +51,11 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - `rename_symbol.go` - `gopls.rename_symbol` → LSP Rename request
 - `tools.go` - Shared utilities for path handling and position parsing
 
-**Architecture Pattern**: Tools are registered in `server.go` with a wrapper that injects the Client interface dynamically, allowing tools to be stateless. The GoplsServer implements the Server interface and coordinates between MCP tools and the LSP client.
-
 **Interface Design**: The codebase uses clean interfaces to separate concerns:
-- `types.Client` - Defines LSP client operations (implemented by GoplsClient)
-- `types.Server` - Defines MCP server operations (implemented by GoplsServer)  
+- `types.Client` - Defines LSP client operations including Start/Shutdown (implemented by GoplsClient)
+- `types.Server` - Defines MCP server operations (implemented by GoplsServer)
 - `types.Transport` - Defines JSON-RPC transport operations (implemented by JsonRpcTransport)
+- `types.Config` - Configuration structure separated for better organization
 
 **Path Handling**: All file paths are converted to absolute paths and file:// URIs for LSP communication.
 

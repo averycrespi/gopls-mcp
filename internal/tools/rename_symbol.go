@@ -11,20 +11,20 @@ import (
 
 // RenameSymbolTool handles symbol renaming requests
 type RenameSymbolTool struct {
-	lspClient types.Client
-	config    *types.Config
+	client types.Client
+	config *types.Config
 }
 
 // NewRenameSymbolTool creates a new symbol renaming tool
-func NewRenameSymbolTool(lspClient types.Client, config *types.Config) *RenameSymbolTool {
+func NewRenameSymbolTool(client types.Client, config *types.Config) *RenameSymbolTool {
 	return &RenameSymbolTool{
-		lspClient: lspClient,
-		config:    config,
+		client: client,
+		config: config,
 	}
 }
 
 // GetTool returns the MCP tool definition
-func (t *RenameSymbolTool) GetTool() *mcp.Tool {
+func (t *RenameSymbolTool) GetTool() mcp.Tool {
 	tool := mcp.NewTool(ToolRenameSymbol,
 		mcp.WithDescription("Rename a symbol across the Go project"),
 		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
@@ -32,15 +32,11 @@ func (t *RenameSymbolTool) GetTool() *mcp.Tool {
 		mcp.WithNumber("character", mcp.Required(), mcp.Description("Character position (0-based)")),
 		mcp.WithString("new_name", mcp.Required(), mcp.Description("New name for the symbol")),
 	)
-	return &tool
+	return tool
 }
 
 // Handle processes the tool request
-func (t *RenameSymbolTool) Handle(ctx context.Context, lspClient types.Client, config *types.Config, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	if lspClient == nil {
-		return mcp.NewToolResultError("LSP client not initialized"), nil
-	}
-
+func (t *RenameSymbolTool) Handle(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	filePath := mcp.ParseString(req, "file_path", "")
 	if filePath == "" {
 		return mcp.NewToolResultError("file_path parameter is required"), nil
@@ -56,8 +52,8 @@ func (t *RenameSymbolTool) Handle(ctx context.Context, lspClient types.Client, c
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	uri := getFileURI(filePath, config.WorkspaceRoot)
-	changes, err := lspClient.RenameSymbol(ctx, uri, position, newName)
+	uri := getFileURI(filePath, t.config.WorkspaceRoot)
+	changes, err := t.client.RenameSymbol(ctx, uri, position, newName)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to rename symbol: %v", err)), nil
 	}
