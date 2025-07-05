@@ -1,4 +1,4 @@
-package lsp
+package transport
 
 import (
 	"encoding/json"

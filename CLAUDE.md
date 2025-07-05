@@ -27,14 +27,18 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 
 ### Core Components
 
-**Main Flow**: MCP Client → MCP Server → LSP Manager → gopls LSP Client → gopls binary
+**Main Flow**: MCP Client → MCP Server → Client Manager → Gopls Client → Transport → gopls binary
 
 - `cmd/gopls-mcp/main.go` - Entry point, handles CLI flags and server lifecycle
-- `internal/server/server.go` - MCP server implementation and tool registration
-- `internal/lsp/manager.go` - Manages LSP client lifecycle and thread safety
-- `internal/lsp/client.go` - LSP client that communicates with gopls via JSON-RPC
+- `internal/server/server.go` - MCP server implementation (GoplsServer) and tool registration
+- `internal/client/manager.go` - Manages LSP client lifecycle and thread safety
+- `internal/client/client.go` - Gopls client that communicates with gopls via JSON-RPC
+- `internal/transport/transport.go` - JSON-RPC transport layer for LSP communication
 - `internal/tools/` - Individual tool implementations (one file per MCP tool)
-- `pkg/types/types.go` - Shared types for LSP operations
+- `pkg/types/` - Shared type definitions split into domain files:
+  - `client.go` - LSP client interface and related types
+  - `server.go` - Server interface and configuration types
+  - `transport.go` - Transport interface for JSON-RPC communication
 
 ### Key Design Patterns
 
@@ -45,13 +49,18 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - `get_completion.go` - `gopls.get_completion` → LSP Completion request
 - `format_code.go` - `gopls.format_code` → LSP DocumentFormatting request
 - `rename_symbol.go` - `gopls.rename_symbol` → LSP Rename request
-- `utils.go` - Shared utilities for path handling and position parsing
+- `tools.go` - Shared utilities for path handling and position parsing
 
-**Architecture Pattern**: Tools are registered in `server.go` with a wrapper that injects the LSP client dynamically, allowing tools to be stateless.
+**Architecture Pattern**: Tools are registered in `server.go` with a wrapper that injects the Client interface dynamically, allowing tools to be stateless. The GoplsServer implements the Server interface and coordinates between MCP tools and the LSP client.
+
+**Interface Design**: The codebase uses clean interfaces to separate concerns:
+- `types.Client` - Defines LSP client operations (implemented by GoplsClient)
+- `types.Server` - Defines MCP server operations (implemented by GoplsServer)  
+- `types.Transport` - Defines JSON-RPC transport operations (implemented by JsonRpcTransport)
 
 **Path Handling**: All file paths are converted to absolute paths and file:// URIs for LSP communication.
 
-**Error Handling**: LSP errors are wrapped and returned as MCP tool result errors.
+**Error Handling**: LSP errors are wrapped and returned as MCP tool result errors with improved logging and specific error messages.
 
 ## MCP Integration
 

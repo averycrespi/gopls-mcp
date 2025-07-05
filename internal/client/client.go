@@ -1,4 +1,4 @@
-package lsp
+package client
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/averycrespi/gopls-mcp/internal/transport"
 	"github.com/averycrespi/gopls-mcp/pkg/project"
 	"github.com/averycrespi/gopls-mcp/pkg/types"
 )
@@ -58,7 +59,7 @@ func (c *GoplsClient) Start(ctx context.Context, goplsPath string) error {
 	}
 
 	c.stderr = stderr
-	c.transport = NewJsonRpcTransport(stdin, stdout)
+	c.transport = transport.NewJsonRpcTransport(stdin, stdout)
 
 	if err := c.cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start gopls: %w", err)

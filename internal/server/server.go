@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/averycrespi/gopls-mcp/internal/lsp"
+	"github.com/averycrespi/gopls-mcp/internal/client"
 	"github.com/averycrespi/gopls-mcp/internal/tools"
 	"github.com/averycrespi/gopls-mcp/pkg/project"
 	"github.com/averycrespi/gopls-mcp/pkg/types"
@@ -19,7 +19,7 @@ var _ types.Server = &GoplsServer{}
 // GoplsServer represents the Gopls MCP server
 type GoplsServer struct {
 	mcpServer   *server.MCPServer
-	lspManager  *lsp.Manager
+	lspManager  *client.Manager
 	config      *types.Config
 	initialized bool
 }
@@ -27,7 +27,7 @@ type GoplsServer struct {
 // NewGoplsServer creates a new Gopls MCP server
 func NewGoplsServer(config *types.Config) *GoplsServer {
 	mcpServer := server.NewMCPServer(project.Name, project.Version)
-	lspManager := lsp.NewManager(config.GoplsPath)
+	lspManager := client.NewManager(config.GoplsPath)
 
 	return &GoplsServer{
 		mcpServer:  mcpServer,

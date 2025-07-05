@@ -147,12 +147,16 @@ The server acts as a bridge:
 ### Project Structure
 ```
 gopls-mcp/
-├── cmd/gopls-mcp/         # Main application
+├── cmd/gopls-mcp/         # Main application entry point
 ├── internal/
-│   ├── server/            # MCP server implementation
-│   ├── lsp/               # LSP client wrapper
+│   ├── server/            # MCP server implementation (GoplsServer)
+│   ├── client/            # LSP client wrapper and manager
+│   ├── transport/         # JSON-RPC transport layer
 │   └── tools/             # Individual MCP tool implementations
-├── pkg/types/             # Shared types
+├── pkg/
+│   ├── types/             # Shared type definitions (client, server, transport)
+│   └── project/           # Project metadata
+├── testdata/              # Test fixtures for integration tests
 └── README.md
 ```
 
