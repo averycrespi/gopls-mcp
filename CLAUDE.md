@@ -38,12 +38,12 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 ### Key Design Patterns
 
 **Tool Registration**: Each MCP tool maps to a specific LSP operation:
-- `go_to_definition` → LSP Definition request
-- `find_references` → LSP References request  
-- `hover_info` → LSP Hover request
-- `get_completion` → LSP Completion request
-- `format_code` → LSP DocumentFormatting request
-- `rename_symbol` → LSP Rename request
+- `gopls.go_to_definition` → LSP Definition request
+- `gopls.find_references` → LSP References request  
+- `gopls.hover_info` → LSP Hover request
+- `gopls.get_completion` → LSP Completion request
+- `gopls.format_code` → LSP DocumentFormatting request
+- `gopls.rename_symbol` → LSP Rename request
 
 **Path Handling**: All file paths are converted to absolute paths and file:// URIs for LSP communication.
 
@@ -57,4 +57,4 @@ The server uses the `github.com/mark3labs/mcp-go` framework and communicates via
 claude mcp add gopls-mcp go run github.com/averycrespi/gopls-mcp@latest
 ```
 
-All tools require `file_path`, `line`, and `character` parameters (0-based indexing) except `format_code` which only needs `file_path`.
+All tools require `file_path`, `line`, and `character` parameters (0-based indexing) except `gopls.format_code` which only needs `file_path`.

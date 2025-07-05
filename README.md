@@ -79,7 +79,7 @@ Example configuration:
 
 ## Available MCP Tools
 
-### go_to_definition
+### gopls.go_to_definition
 Find where a symbol is defined.
 
 **Parameters:**
@@ -87,7 +87,7 @@ Find where a symbol is defined.
 - `line` (number): Line number (0-based)
 - `character` (number): Character position (0-based)
 
-### find_references
+### gopls.find_references
 Find all references to a symbol.
 
 **Parameters:**
@@ -95,7 +95,7 @@ Find all references to a symbol.
 - `line` (number): Line number (0-based)
 - `character` (number): Character position (0-based)
 
-### hover_info
+### gopls.hover_info
 Get hover information for a symbol.
 
 **Parameters:**
@@ -103,7 +103,7 @@ Get hover information for a symbol.
 - `line` (number): Line number (0-based)
 - `character` (number): Character position (0-based)
 
-### get_completion
+### gopls.get_completion
 Get code completion suggestions.
 
 **Parameters:**
@@ -111,13 +111,13 @@ Get code completion suggestions.
 - `line` (number): Line number (0-based)
 - `character` (number): Character position (0-based)
 
-### format_code
+### gopls.format_code
 Format Go code using gofmt.
 
 **Parameters:**
 - `file_path` (string): Path to the Go file
 
-### rename_symbol
+### gopls.rename_symbol
 Rename a symbol across the project.
 
 **Parameters:**

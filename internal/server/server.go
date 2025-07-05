@@ -53,7 +53,7 @@ func (s *Server) Start(ctx context.Context) error {
 // registerTools registers all MCP tools
 func (s *Server) registerTools() error {
 	// Go to definition tool
-	goToDefTool := mcp.NewTool("go_to_definition",
+	goToDefTool := mcp.NewTool("gopls.go_to_definition",
 		mcp.WithDescription("Find the definition of a symbol in Go code"),
 		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
 		mcp.WithNumber("line", mcp.Required(), mcp.Description("Line number (0-based)")),
@@ -62,7 +62,7 @@ func (s *Server) registerTools() error {
 	s.mcpServer.AddTool(goToDefTool, s.handleGoToDefinition)
 	
 	// Find references tool
-	findRefsTool := mcp.NewTool("find_references",
+	findRefsTool := mcp.NewTool("gopls.find_references",
 		mcp.WithDescription("Find all references to a symbol in Go code"),
 		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
 		mcp.WithNumber("line", mcp.Required(), mcp.Description("Line number (0-based)")),
@@ -71,7 +71,7 @@ func (s *Server) registerTools() error {
 	s.mcpServer.AddTool(findRefsTool, s.handleFindReferences)
 	
 	// Hover info tool
-	hoverTool := mcp.NewTool("hover_info",
+	hoverTool := mcp.NewTool("gopls.hover_info",
 		mcp.WithDescription("Get hover information for a symbol in Go code"),
 		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
 		mcp.WithNumber("line", mcp.Required(), mcp.Description("Line number (0-based)")),
@@ -80,7 +80,7 @@ func (s *Server) registerTools() error {
 	s.mcpServer.AddTool(hoverTool, s.handleHoverInfo)
 	
 	// Get completion tool
-	completionTool := mcp.NewTool("get_completion",
+	completionTool := mcp.NewTool("gopls.get_completion",
 		mcp.WithDescription("Get code completion suggestions for Go code"),
 		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
 		mcp.WithNumber("line", mcp.Required(), mcp.Description("Line number (0-based)")),
@@ -89,14 +89,14 @@ func (s *Server) registerTools() error {
 	s.mcpServer.AddTool(completionTool, s.handleGetCompletion)
 	
 	// Format code tool
-	formatTool := mcp.NewTool("format_code",
+	formatTool := mcp.NewTool("gopls.format_code",
 		mcp.WithDescription("Format Go code using gofmt"),
 		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
 	)
 	s.mcpServer.AddTool(formatTool, s.handleFormatCode)
 	
 	// Rename symbol tool
-	renameTool := mcp.NewTool("rename_symbol",
+	renameTool := mcp.NewTool("gopls.rename_symbol",
 		mcp.WithDescription("Rename a symbol across the Go project"),
 		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
 		mcp.WithNumber("line", mcp.Required(), mcp.Description("Line number (0-based)")),
