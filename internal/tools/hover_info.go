@@ -11,12 +11,12 @@ import (
 
 // HoverInfoTool handles hover-info requests
 type HoverInfoTool struct {
-	lspClient types.LSPClient
+	lspClient types.Client
 	config    *types.Config
 }
 
 // NewHoverInfoTool creates a new hover-info tool
-func NewHoverInfoTool(lspClient types.LSPClient, config *types.Config) *HoverInfoTool {
+func NewHoverInfoTool(lspClient types.Client, config *types.Config) *HoverInfoTool {
 	return &HoverInfoTool{
 		lspClient: lspClient,
 		config:    config,
@@ -35,7 +35,7 @@ func (t *HoverInfoTool) GetTool() *mcp.Tool {
 }
 
 // Handle processes the tool request
-func (t *HoverInfoTool) Handle(ctx context.Context, lspClient types.LSPClient, config *types.Config, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (t *HoverInfoTool) Handle(ctx context.Context, lspClient types.Client, config *types.Config, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	if lspClient == nil {
 		return mcp.NewToolResultError("LSP client not initialized"), nil
 	}

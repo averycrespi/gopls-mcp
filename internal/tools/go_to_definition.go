@@ -11,12 +11,12 @@ import (
 
 // GoToDefinitionTool handles go-to-definition requests
 type GoToDefinitionTool struct {
-	lspClient types.LSPClient
+	lspClient types.Client
 	config    *types.Config
 }
 
 // NewGoToDefinitionTool creates a new go-to-definition tool
-func NewGoToDefinitionTool(lspClient types.LSPClient, config *types.Config) *GoToDefinitionTool {
+func NewGoToDefinitionTool(lspClient types.Client, config *types.Config) *GoToDefinitionTool {
 	return &GoToDefinitionTool{
 		lspClient: lspClient,
 		config:    config,
@@ -35,7 +35,7 @@ func (t *GoToDefinitionTool) GetTool() *mcp.Tool {
 }
 
 // Handle processes the tool request
-func (t *GoToDefinitionTool) Handle(ctx context.Context, lspClient types.LSPClient, config *types.Config, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (t *GoToDefinitionTool) Handle(ctx context.Context, lspClient types.Client, config *types.Config, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	if lspClient == nil {
 		return mcp.NewToolResultError("LSP client not initialized"), nil
 	}

@@ -11,12 +11,12 @@ import (
 
 // FindReferencesTool handles find-references requests
 type FindReferencesTool struct {
-	lspClient types.LSPClient
+	lspClient types.Client
 	config    *types.Config
 }
 
 // NewFindReferencesTool creates a new find-references tool
-func NewFindReferencesTool(lspClient types.LSPClient, config *types.Config) *FindReferencesTool {
+func NewFindReferencesTool(lspClient types.Client, config *types.Config) *FindReferencesTool {
 	return &FindReferencesTool{
 		lspClient: lspClient,
 		config:    config,
@@ -35,7 +35,7 @@ func (t *FindReferencesTool) GetTool() *mcp.Tool {
 }
 
 // Handle processes the tool request
-func (t *FindReferencesTool) Handle(ctx context.Context, lspClient types.LSPClient, config *types.Config, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (t *FindReferencesTool) Handle(ctx context.Context, lspClient types.Client, config *types.Config, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	if lspClient == nil {
 		return mcp.NewToolResultError("LSP client not initialized"), nil
 	}

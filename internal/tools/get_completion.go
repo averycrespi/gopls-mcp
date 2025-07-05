@@ -11,12 +11,12 @@ import (
 
 // GetCompletionTool handles code completion requests
 type GetCompletionTool struct {
-	lspClient types.LSPClient
+	lspClient types.Client
 	config    *types.Config
 }
 
 // NewGetCompletionTool creates a new code completion tool
-func NewGetCompletionTool(lspClient types.LSPClient, config *types.Config) *GetCompletionTool {
+func NewGetCompletionTool(lspClient types.Client, config *types.Config) *GetCompletionTool {
 	return &GetCompletionTool{
 		lspClient: lspClient,
 		config:    config,
@@ -35,7 +35,7 @@ func (t *GetCompletionTool) GetTool() *mcp.Tool {
 }
 
 // Handle processes the tool request
-func (t *GetCompletionTool) Handle(ctx context.Context, lspClient types.LSPClient, config *types.Config, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (t *GetCompletionTool) Handle(ctx context.Context, lspClient types.Client, config *types.Config, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	if lspClient == nil {
 		return mcp.NewToolResultError("LSP client not initialized"), nil
 	}

@@ -52,8 +52,8 @@ type Config struct {
 	LogLevel      string `json:"log_level,omitempty"`
 }
 
-// LSPClient defines the interface for LSP client operations
-type LSPClient interface {
+// Client defines the interface for LSP client operations
+type Client interface {
 	Initialize(ctx context.Context, rootURI string) error
 	GoToDefinition(ctx context.Context, uri string, position Position) ([]Location, error)
 	FindReferences(ctx context.Context, uri string, position Position) ([]Location, error)

@@ -17,51 +17,50 @@ const (
 	goplsStartDelay  = 100 * time.Millisecond
 )
 
-var _ types.LSPClient = &Client{}
+var _ types.Client = &GoplsClient{}
 
-// Client implements the LSP client interface
-type Client struct {
+// GoplsClient implements the Client interface for the Gopls LSP server
+type GoplsClient struct {
 	goplsPath string
 	cmd       *exec.Cmd
 	stderr    io.ReadCloser
 	transport types.Transport
 }
 
-// NewClient creates a new LSP client
-func NewClient(goplsPath string) *Client {
+// NewGoplsClient creates a new Gopls client
+func NewGoplsClient(goplsPath string) *GoplsClient {
 	if goplsPath == "" {
 		goplsPath = defaultGoplsPath
 	}
 
-	return &Client{
+	return &GoplsClient{
 		goplsPath: goplsPath,
 	}
 }
 
 // Start starts the gopls process
-func (c *Client) Start(ctx context.Context, goplsPath string) error {
-	cmd := exec.CommandContext(ctx, goplsPath, "serve")
+func (c *GoplsClient) Start(ctx context.Context, goplsPath string) error {
+	c.cmd = exec.CommandContext(ctx, goplsPath, "serve")
 
-	stdin, err := cmd.StdinPipe()
+	stdin, err := c.cmd.StdinPipe()
 	if err != nil {
 		return fmt.Errorf("failed to create stdin pipe: %w", err)
 	}
 
-	stdout, err := cmd.StdoutPipe()
+	stdout, err := c.cmd.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("failed to create stdout pipe: %w", err)
 	}
 
-	stderr, err := cmd.StderrPipe()
+	stderr, err := c.cmd.StderrPipe()
 	if err != nil {
 		return fmt.Errorf("failed to create stderr pipe: %w", err)
 	}
 
-	c.cmd = cmd
 	c.stderr = stderr
 	c.transport = NewJsonRpcTransport(stdin, stdout)
 
-	if err := cmd.Start(); err != nil {
+	if err := c.cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start gopls: %w", err)
 	}
 
@@ -71,7 +70,7 @@ func (c *Client) Start(ctx context.Context, goplsPath string) error {
 }
 
 // Initialize initializes the LSP client
-func (c *Client) Initialize(ctx context.Context, rootURI string) error {
+func (c *GoplsClient) Initialize(ctx context.Context, rootURI string) error {
 	params := map[string]any{
 		"processId": nil,
 		"clientInfo": map[string]any{
@@ -91,7 +90,7 @@ func (c *Client) Initialize(ctx context.Context, rootURI string) error {
 	return c.transport.SendNotification("initialized", map[string]any{})
 }
 
-func (c *Client) GoToDefinition(ctx context.Context, uri string, position types.Position) ([]types.Location, error) {
+func (c *GoplsClient) GoToDefinition(ctx context.Context, uri string, position types.Position) ([]types.Location, error) {
 	params := map[string]any{
 		"textDocument": map[string]any{
 			"uri": uri,
@@ -129,7 +128,7 @@ func (c *Client) GoToDefinition(ctx context.Context, uri string, position types.
 	return locations, nil
 }
 
-func (c *Client) FindReferences(ctx context.Context, uri string, position types.Position) ([]types.Location, error) {
+func (c *GoplsClient) FindReferences(ctx context.Context, uri string, position types.Position) ([]types.Location, error) {
 	params := map[string]any{
 		"textDocument": map[string]any{
 			"uri": uri,
@@ -153,7 +152,7 @@ func (c *Client) FindReferences(ctx context.Context, uri string, position types.
 	return locations, nil
 }
 
-func (c *Client) Hover(ctx context.Context, uri string, position types.Position) (string, error) {
+func (c *GoplsClient) Hover(ctx context.Context, uri string, position types.Position) (string, error) {
 	params := map[string]any{
 		"textDocument": map[string]any{
 			"uri": uri,
@@ -186,13 +185,13 @@ func (c *Client) Hover(ctx context.Context, uri string, position types.Position)
 	return fmt.Sprintf("%v", hover.Contents), nil
 }
 
-func (c *Client) GetDiagnostics(ctx context.Context, uri string) ([]types.Diagnostic, error) {
+func (c *GoplsClient) GetDiagnostics(ctx context.Context, uri string) ([]types.Diagnostic, error) {
 	// Note: Diagnostics are typically sent as notifications, not requests
 	// This is a simplified implementation
 	return []types.Diagnostic{}, nil
 }
 
-func (c *Client) GetCompletion(ctx context.Context, uri string, position types.Position) ([]types.CompletionItem, error) {
+func (c *GoplsClient) GetCompletion(ctx context.Context, uri string, position types.Position) ([]types.CompletionItem, error) {
 	params := map[string]any{
 		"textDocument": map[string]any{
 			"uri": uri,
@@ -215,7 +214,7 @@ func (c *Client) GetCompletion(ctx context.Context, uri string, position types.P
 	return completion.Items, nil
 }
 
-func (c *Client) FormatDocument(ctx context.Context, uri string) ([]json.RawMessage, error) {
+func (c *GoplsClient) FormatDocument(ctx context.Context, uri string) ([]json.RawMessage, error) {
 	params := map[string]any{
 		"textDocument": map[string]any{
 			"uri": uri,
@@ -239,7 +238,7 @@ func (c *Client) FormatDocument(ctx context.Context, uri string) ([]json.RawMess
 	return edits, nil
 }
 
-func (c *Client) RenameSymbol(ctx context.Context, uri string, position types.Position, newName string) (map[string][]json.RawMessage, error) {
+func (c *GoplsClient) RenameSymbol(ctx context.Context, uri string, position types.Position, newName string) (map[string][]json.RawMessage, error) {
 	params := map[string]any{
 		"textDocument": map[string]any{
 			"uri": uri,
@@ -263,7 +262,7 @@ func (c *Client) RenameSymbol(ctx context.Context, uri string, position types.Po
 	return workspaceEdit.Changes, nil
 }
 
-func (c *Client) Shutdown(ctx context.Context) error {
+func (c *GoplsClient) Shutdown(ctx context.Context) error {
 	_, err := c.transport.SendRequest("shutdown", nil)
 	if err != nil {
 		return fmt.Errorf("failed to shutdown: %w", err)

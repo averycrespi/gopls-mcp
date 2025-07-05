@@ -11,12 +11,12 @@ import (
 
 // FormatCodeTool handles code formatting requests
 type FormatCodeTool struct {
-	lspClient types.LSPClient
+	lspClient types.Client
 	config    *types.Config
 }
 
 // NewFormatCodeTool creates a new code formatting tool
-func NewFormatCodeTool(lspClient types.LSPClient, config *types.Config) *FormatCodeTool {
+func NewFormatCodeTool(lspClient types.Client, config *types.Config) *FormatCodeTool {
 	return &FormatCodeTool{
 		lspClient: lspClient,
 		config:    config,
@@ -33,7 +33,7 @@ func (t *FormatCodeTool) GetTool() *mcp.Tool {
 }
 
 // Handle processes the tool request
-func (t *FormatCodeTool) Handle(ctx context.Context, lspClient types.LSPClient, config *types.Config, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (t *FormatCodeTool) Handle(ctx context.Context, lspClient types.Client, config *types.Config, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	if lspClient == nil {
 		return mcp.NewToolResultError("LSP client not initialized"), nil
 	}

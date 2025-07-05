@@ -11,7 +11,7 @@ import (
 
 // Manager manages the LSP client lifecycle
 type Manager struct {
-	client      *Client
+	client      *GoplsClient
 	goplsPath   string
 	initialized bool
 	mu          sync.RWMutex
@@ -35,7 +35,7 @@ func (m *Manager) Initialize(ctx context.Context, workspaceRoot string) error {
 		return nil
 	}
 
-	m.client = NewClient(m.goplsPath)
+	m.client = NewGoplsClient(m.goplsPath)
 
 	if err := m.client.Start(ctx, m.goplsPath); err != nil {
 		return fmt.Errorf("failed to start LSP client: %w", err)
@@ -51,7 +51,7 @@ func (m *Manager) Initialize(ctx context.Context, workspaceRoot string) error {
 }
 
 // GetClient returns the LSP client
-func (m *Manager) GetClient() types.LSPClient {
+func (m *Manager) GetClient() types.Client {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 

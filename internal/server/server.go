@@ -81,7 +81,7 @@ func (s *Server) registerTools() error {
 }
 
 // wrapHandler wraps tool handlers to inject the LSP client dynamically
-func (s *Server) wrapHandler(handler func(context.Context, types.LSPClient, *types.Config, mcp.CallToolRequest) (*mcp.CallToolResult, error)) func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *Server) wrapHandler(handler func(context.Context, types.Client, *types.Config, mcp.CallToolRequest) (*mcp.CallToolResult, error)) func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		lspClient := s.lspManager.GetClient()
 		if lspClient == nil && s.lspManager.IsInitialized() {

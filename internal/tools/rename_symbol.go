@@ -11,12 +11,12 @@ import (
 
 // RenameSymbolTool handles symbol renaming requests
 type RenameSymbolTool struct {
-	lspClient types.LSPClient
+	lspClient types.Client
 	config    *types.Config
 }
 
 // NewRenameSymbolTool creates a new symbol renaming tool
-func NewRenameSymbolTool(lspClient types.LSPClient, config *types.Config) *RenameSymbolTool {
+func NewRenameSymbolTool(lspClient types.Client, config *types.Config) *RenameSymbolTool {
 	return &RenameSymbolTool{
 		lspClient: lspClient,
 		config:    config,
@@ -36,7 +36,7 @@ func (t *RenameSymbolTool) GetTool() *mcp.Tool {
 }
 
 // Handle processes the tool request
-func (t *RenameSymbolTool) Handle(ctx context.Context, lspClient types.LSPClient, config *types.Config, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (t *RenameSymbolTool) Handle(ctx context.Context, lspClient types.Client, config *types.Config, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	if lspClient == nil {
 		return mcp.NewToolResultError("LSP client not initialized"), nil
 	}
