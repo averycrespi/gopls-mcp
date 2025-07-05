@@ -34,13 +34,20 @@ func (t *Transport) Start() {
 	go t.readResponses()
 }
 
-// Close closes the transport
-func (t *Transport) Close() error {
-	close(t.done)
-	if t.stdin != nil {
-		return t.stdin.Close()
+func (t *Transport) IsClosed() bool {
+	select {
+	case <-t.done:
+		return true
+	default:
+		return false
 	}
-	return nil
+}
+
+// Close closes the transport
+func (t *Transport) Close() {
+	if !t.IsClosed() {
+		close(t.done)
+	}
 }
 
 // lspResponse represents a JSON-RPC response
@@ -52,9 +59,13 @@ type lspResponse struct {
 
 // readResponses reads responses from the stdout stream
 func (t *Transport) readResponses() {
-	defer close(t.done)
+	defer t.Close()
 
 	for {
+		if t.IsClosed() {
+			return
+		}
+
 		// Read Content-Length header byte by byte until we find \r\n\r\n
 		var contentLength int
 		var header []byte

@@ -73,7 +73,6 @@ func (c *Client) Start(ctx context.Context, goplsPath string) error {
 	return nil
 }
 
-
 // Initialize initializes the LSP client
 func (c *Client) Initialize(ctx context.Context, rootURI string) error {
 	params := map[string]any{
@@ -94,7 +93,6 @@ func (c *Client) Initialize(ctx context.Context, rootURI string) error {
 	// Send initialized notification
 	return c.transport.SendNotification("initialized", map[string]any{})
 }
-
 
 func (c *Client) GoToDefinition(ctx context.Context, uri string, position types.Position) ([]types.Location, error) {
 	params := map[string]any{
@@ -280,9 +278,7 @@ func (c *Client) Shutdown(ctx context.Context) error {
 	}
 
 	// Close the transport
-	if err := c.transport.Close(); err != nil {
-		return fmt.Errorf("failed to close transport: %w", err)
-	}
+	c.transport.Close()
 
 	if c.cmd != nil && c.cmd.Process != nil {
 		_ = c.cmd.Process.Kill()
