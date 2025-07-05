@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -33,13 +34,13 @@ func main() {
 		config.WorkspaceRoot = absPath
 	}
 
-	mcpServer := server.NewServer(config)
+	mcpServer := server.NewGoplsServer(config)
 
 	if err := mcpServer.RegisterTools(); err != nil {
 		log.Fatalf("Failed to register tools: %v", err)
 	}
 
-	if err := mcpServer.Start(); err != nil {
+	if err := mcpServer.Start(context.Background()); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}
 

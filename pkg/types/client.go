@@ -52,7 +52,7 @@ type Config struct {
 	LogLevel      string `json:"log_level,omitempty"`
 }
 
-// Client defines the interface for LSP client operations
+// Client defines the LSP client interface
 type Client interface {
 	Initialize(ctx context.Context, rootURI string) error
 	GoToDefinition(ctx context.Context, uri string, position Position) ([]Location, error)
@@ -63,13 +63,4 @@ type Client interface {
 	FormatDocument(ctx context.Context, uri string) ([]json.RawMessage, error)
 	RenameSymbol(ctx context.Context, uri string, position Position, newName string) (map[string][]json.RawMessage, error)
 	Shutdown(ctx context.Context) error
-}
-
-// Transport defines the interface for the transport layer
-type Transport interface {
-	Listen()
-	IsClosed() bool
-	Close()
-	SendRequest(method string, params any) (json.RawMessage, error)
-	SendNotification(method string, params any) error
 }

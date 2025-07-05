@@ -5,8 +5,20 @@ import (
 	"strings"
 
 	"github.com/averycrespi/gopls-mcp/pkg/types"
-
 	"github.com/mark3labs/mcp-go/mcp"
+)
+
+// Tool name prefix for all MCP tools
+const ToolPrefix = "gopls."
+
+// Tool names
+const (
+	ToolGoToDefinition = ToolPrefix + "go_to_definition"
+	ToolFindReferences = ToolPrefix + "find_references"
+	ToolHoverInfo      = ToolPrefix + "hover_info"
+	ToolGetCompletion  = ToolPrefix + "get_completion"
+	ToolFormatCode     = ToolPrefix + "format_code"
+	ToolRenameSymbol   = ToolPrefix + "rename_symbol"
 )
 
 // getFileURI converts a file path to a file URI
