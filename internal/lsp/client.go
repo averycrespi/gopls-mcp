@@ -12,19 +12,19 @@ import (
 	"github.com/averycrespi/gopls-mcp/pkg/types"
 )
 
-var _ types.LSPClient = &Client{}
-
 const (
 	defaultGoplsPath = "gopls"
 	goplsStartDelay  = 100 * time.Millisecond
 )
+
+var _ types.LSPClient = &Client{}
 
 // Client implements the LSP client interface
 type Client struct {
 	goplsPath string
 	cmd       *exec.Cmd
 	stderr    io.ReadCloser
-	transport *Transport
+	transport types.Transport
 }
 
 // NewClient creates a new LSP client
@@ -59,16 +59,13 @@ func (c *Client) Start(ctx context.Context, goplsPath string) error {
 
 	c.cmd = cmd
 	c.stderr = stderr
-	c.transport = NewTransport(stdin, stdout)
+	c.transport = NewJsonRpcTransport(stdin, stdout)
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start gopls: %w", err)
 	}
 
-	c.transport.Start()
-
-	// Give gopls a moment to start
-	time.Sleep(goplsStartDelay)
+	c.transport.Listen()
 
 	return nil
 }

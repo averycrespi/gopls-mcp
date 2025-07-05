@@ -64,3 +64,12 @@ type LSPClient interface {
 	RenameSymbol(ctx context.Context, uri string, position Position, newName string) (map[string][]json.RawMessage, error)
 	Shutdown(ctx context.Context) error
 }
+
+// Transport defines the interface for the transport layer
+type Transport interface {
+	Listen()
+	IsClosed() bool
+	Close()
+	SendRequest(method string, params any) (json.RawMessage, error)
+	SendNotification(method string, params any) error
+}

@@ -4,37 +4,47 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/averycrespi/gopls-mcp/pkg/types"
 )
 
-// Transport handles the low-level JSON-RPC communication over stdin/stdout
-type Transport struct {
-	stdin     io.WriteCloser
-	stdout    io.ReadCloser
+const (
+	receiveTimeout = 10 * time.Second
+)
+
+var _ types.Transport = &JsonRpcTransport{}
+
+// JsonRpcTransport handles low-level JSON-RPC communication
+type JsonRpcTransport struct {
+	writer    io.Writer
+	reader    io.Reader
 	requestID int64
 	responses map[int64]chan json.RawMessage
 	mu        sync.RWMutex
 	done      chan struct{}
 }
 
-// NewTransport creates a new transport instance
-func NewTransport(stdin io.WriteCloser, stdout io.ReadCloser) *Transport {
-	return &Transport{
-		stdin:     stdin,
-		stdout:    stdout,
+// NewJsonRpcTransport creates a new transport instance
+func NewJsonRpcTransport(writer io.Writer, reader io.Reader) *JsonRpcTransport {
+	return &JsonRpcTransport{
+		writer:    writer,
+		reader:    reader,
 		responses: make(map[int64]chan json.RawMessage),
 		done:      make(chan struct{}),
 	}
 }
 
-// Start starts reading responses from the transport
-func (t *Transport) Start() {
+// Listen reads responses in the background until the transport is closed
+func (t *JsonRpcTransport) Listen() {
 	go t.readResponses()
 }
 
-func (t *Transport) IsClosed() bool {
+// IsClosed checks if the transport is closed
+func (t *JsonRpcTransport) IsClosed() bool {
 	select {
 	case <-t.done:
 		return true
@@ -44,71 +54,72 @@ func (t *Transport) IsClosed() bool {
 }
 
 // Close closes the transport
-func (t *Transport) Close() {
+func (t *JsonRpcTransport) Close() {
 	if !t.IsClosed() {
 		close(t.done)
 	}
 }
 
-// lspResponse represents a JSON-RPC response
-type lspResponse struct {
-	ID     json.RawMessage `json:"id"`
-	Result json.RawMessage `json:"result"`
-	Error  json.RawMessage `json:"error"`
-}
-
-// readResponses reads responses from the stdout stream
-func (t *Transport) readResponses() {
+func (t *JsonRpcTransport) readResponses() {
 	defer t.Close()
 
 	for {
+		// Read one response at a time until the transport is closed
 		if t.IsClosed() {
 			return
 		}
 
-		// Read Content-Length header byte by byte until we find \r\n\r\n
 		var contentLength int
 		var header []byte
 
 		for {
+			// Read one byte at a time until we find the end of the header
 			b := make([]byte, 1)
-			if _, err := t.stdout.Read(b); err != nil {
+			if _, err := t.reader.Read(b); err != nil {
+				log.Println("failed to read JSON-RPC response header", err)
 				return
 			}
 			header = append(header, b[0])
 
+			// Extract the Content-Length from the header, then break
 			if len(header) >= 4 && string(header[len(header)-4:]) == "\r\n\r\n" {
 				headerStr := string(header)
 				if _, err := fmt.Sscanf(headerStr, "Content-Length: %d\r\n\r\n", &contentLength); err != nil {
+					log.Println("failed to scan JSON-RPC response header", err)
 					continue
 				}
 				break
 			}
 		}
 
-		// Read the JSON response body
+		// Use the Content-Length to read the JSON response body
 		body := make([]byte, contentLength)
-		if _, err := io.ReadFull(t.stdout, body); err != nil {
+		if _, err := io.ReadFull(t.reader, body); err != nil {
+			log.Println("failed to read JSON-RPC response body", err)
 			return
 		}
-
 		t.handleResponse(body)
 	}
 }
 
-// handleResponse handles a JSON-RPC response
-func (t *Transport) handleResponse(content []byte) {
-	var resp lspResponse
+func (t *JsonRpcTransport) handleResponse(content []byte) {
+	var resp struct {
+		ID     json.RawMessage `json:"id"`
+		Result json.RawMessage `json:"result"`
+		Error  json.RawMessage `json:"error"`
+	}
 	if err := json.Unmarshal(content, &resp); err != nil {
+		log.Println("failed to unmarshal JSON-RPC response", err)
 		return
 	}
 
 	if resp.ID == nil {
-		return // notification
+		return // ignore notifications
 	}
 
 	var id int64
 	if err := json.Unmarshal(resp.ID, &id); err != nil {
+		log.Println("failed to unmarshal JSON-RPC response ID", err)
 		return
 	}
 
@@ -126,7 +137,7 @@ func (t *Transport) handleResponse(content []byte) {
 }
 
 // SendRequest sends a JSON-RPC request and waits for the response
-func (t *Transport) SendRequest(method string, params any) (json.RawMessage, error) {
+func (t *JsonRpcTransport) SendRequest(method string, params any) (json.RawMessage, error) {
 	id := atomic.AddInt64(&t.requestID, 1)
 
 	request := map[string]any{
@@ -138,7 +149,7 @@ func (t *Transport) SendRequest(method string, params any) (json.RawMessage, err
 
 	data, err := json.Marshal(request)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
+		return nil, fmt.Errorf("failed to marshal JSON-RPC request: %w", err)
 	}
 
 	ch := make(chan json.RawMessage, 1)
@@ -153,20 +164,19 @@ func (t *Transport) SendRequest(method string, params any) (json.RawMessage, err
 	}()
 
 	if err := t.writeMessage(data); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to write JSON-RPC request: %w", err)
 	}
 
-	// Wait for response with timeout
 	select {
 	case response := <-ch:
 		return response, nil
-	case <-time.After(10 * time.Second):
+	case <-time.After(receiveTimeout):
 		return nil, fmt.Errorf("timeout waiting for response to method %s", method)
 	}
 }
 
 // SendNotification sends a JSON-RPC notification (no response expected)
-func (t *Transport) SendNotification(method string, params any) error {
+func (t *JsonRpcTransport) SendNotification(method string, params any) error {
 	notification := map[string]any{
 		"jsonrpc": "2.0",
 		"method":  method,
@@ -175,21 +185,24 @@ func (t *Transport) SendNotification(method string, params any) error {
 
 	data, err := json.Marshal(notification)
 	if err != nil {
-		return fmt.Errorf("failed to marshal notification: %w", err)
+		return fmt.Errorf("failed to marshal JSON-RPC notification: %w", err)
 	}
 
-	return t.writeMessage(data)
+	if err := t.writeMessage(data); err != nil {
+		return fmt.Errorf("failed to write JSON-RPC notification: %w", err)
+	}
+
+	return nil
 }
 
-// writeMessage writes a message with the LSP Content-Length header
-func (t *Transport) writeMessage(data []byte) error {
+func (t *JsonRpcTransport) writeMessage(data []byte) error {
 	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(data))
-	if _, err := t.stdin.Write([]byte(header)); err != nil {
-		return fmt.Errorf("failed to write header: %w", err)
+	if _, err := t.writer.Write([]byte(header)); err != nil {
+		return fmt.Errorf("failed to write JSON-RPC message header: %w", err)
 	}
 
-	if _, err := t.stdin.Write(data); err != nil {
-		return fmt.Errorf("failed to write data: %w", err)
+	if _, err := t.writer.Write(data); err != nil {
+		return fmt.Errorf("failed to write JSON-RPC message data: %w", err)
 	}
 
 	return nil
