@@ -7,6 +7,7 @@ import (
 
 	"gopls-mcp/internal/lsp"
 	"gopls-mcp/internal/tools"
+	"gopls-mcp/pkg/project"
 	"gopls-mcp/pkg/types"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -23,7 +24,7 @@ type Server struct {
 
 // NewServer creates a new MCP server
 func NewServer(config *types.Config) *Server {
-	mcpServer := server.NewMCPServer("gopls-mcp", "0.0.1")
+	mcpServer := server.NewMCPServer(project.Name, project.Version)
 	lspManager := lsp.NewManager(config.GoplsPath)
 
 	return &Server{
@@ -40,13 +41,11 @@ func (s *Server) RegisterTools() error {
 
 // Start starts the MCP server
 func (s *Server) Start() error {
-	log.Printf("gopls-mcp server starting with workspace: %s", s.config.WorkspaceRoot)
+	log.Printf("Starting %s v%s with config: %+v", project.Name, project.Version, s.config)
 
 	// Initialize LSP manager in background (don't block MCP server startup)
 	go func() {
 		ctx := context.Background()
-		log.Printf("Initializing LSP manager with workspace: %s", s.config.WorkspaceRoot)
-		
 		if err := s.lspManager.Initialize(ctx, s.config.WorkspaceRoot); err != nil {
 			log.Printf("Failed to initialize LSP manager: %v", err)
 			// Continue without LSP - tools will return appropriate errors
@@ -56,7 +55,7 @@ func (s *Server) Start() error {
 		}
 	}()
 
-	log.Printf("gopls-mcp server started")
+	log.Printf("Running MCP server on stdio")
 	return server.ServeStdio(s.mcpServer)
 }
 

@@ -4,8 +4,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mark3labs/mcp-go/mcp"
 	"gopls-mcp/pkg/types"
+
+	"github.com/mark3labs/mcp-go/mcp"
 )
 
 // getFileURI converts a file path to a file URI

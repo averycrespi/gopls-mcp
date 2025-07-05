@@ -3,6 +3,7 @@ package lsp
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 
 	"gopls-mcp/pkg/types"
@@ -25,6 +26,8 @@ func NewManager(goplsPath string) *Manager {
 
 // Initialize initializes the LSP client with the given workspace root
 func (m *Manager) Initialize(ctx context.Context, workspaceRoot string) error {
+	log.Printf("Initializing LSP manager with workspace: %s", workspaceRoot)
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

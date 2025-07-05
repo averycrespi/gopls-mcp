@@ -10,7 +10,15 @@ import (
 	"sync/atomic"
 	"time"
 
+	"gopls-mcp/pkg/project"
 	"gopls-mcp/pkg/types"
+)
+
+var _ types.LSPClient = &Client{}
+
+const (
+	defaultGoplsPath = "gopls"
+	goplsStartDelay  = 100 * time.Millisecond
 )
 
 // Client implements the LSP client interface
@@ -29,7 +37,7 @@ type Client struct {
 // NewClient creates a new LSP client
 func NewClient(goplsPath string) *Client {
 	if goplsPath == "" {
-		goplsPath = "gopls"
+		goplsPath = defaultGoplsPath
 	}
 
 	return &Client{
@@ -70,7 +78,7 @@ func (c *Client) Start(ctx context.Context, goplsPath string) error {
 	go c.readResponses()
 
 	// Give gopls a moment to start
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(goplsStartDelay)
 
 	return nil
 }
@@ -83,14 +91,14 @@ func (c *Client) readResponses() {
 		// Read Content-Length header byte by byte until we find \r\n\r\n
 		var contentLength int
 		var header []byte
-		
+
 		for {
 			b := make([]byte, 1)
 			if _, err := c.stdout.Read(b); err != nil {
 				return
 			}
 			header = append(header, b[0])
-			
+
 			if len(header) >= 4 && string(header[len(header)-4:]) == "\r\n\r\n" {
 				headerStr := string(header)
 				if _, err := fmt.Sscanf(headerStr, "Content-Length: %d\r\n\r\n", &contentLength); err != nil {
@@ -99,35 +107,36 @@ func (c *Client) readResponses() {
 				break
 			}
 		}
-		
+
 		// Read the JSON response body
 		body := make([]byte, contentLength)
 		if _, err := io.ReadFull(c.stdout, body); err != nil {
 			return
 		}
-		
+
 		c.handleResponse(body)
 	}
 }
 
+type lspResponse struct {
+	ID     json.RawMessage `json:"id"`
+	Result json.RawMessage `json:"result"`
+	Error  json.RawMessage `json:"error"`
+}
+
 // handleResponse handles a JSON-RPC response
 func (c *Client) handleResponse(content []byte) {
-	var response struct {
-		ID     json.RawMessage `json:"id"`
-		Result json.RawMessage `json:"result"`
-		Error  json.RawMessage `json:"error"`
-	}
-
-	if err := json.Unmarshal(content, &response); err != nil {
+	var resp lspResponse
+	if err := json.Unmarshal(content, &resp); err != nil {
 		return
 	}
 
-	if response.ID == nil {
+	if resp.ID == nil {
 		return // notification
 	}
 
 	var id int64
-	if err := json.Unmarshal(response.ID, &id); err != nil {
+	if err := json.Unmarshal(resp.ID, &id); err != nil {
 		return
 	}
 
@@ -136,10 +145,10 @@ func (c *Client) handleResponse(content []byte) {
 	c.mu.RUnlock()
 
 	if ok {
-		if response.Error != nil {
-			ch <- response.Error
+		if resp.Error != nil {
+			ch <- resp.Error
 		} else {
-			ch <- response.Result
+			ch <- resp.Result
 		}
 	}
 }
@@ -148,7 +157,7 @@ func (c *Client) handleResponse(content []byte) {
 func (c *Client) sendRequest(method string, params interface{}) (json.RawMessage, error) {
 	id := atomic.AddInt64(&c.requestID, 1)
 
-	request := map[string]interface{}{
+	request := map[string]any{
 		"jsonrpc": "2.0",
 		"id":      id,
 		"method":  method,
@@ -191,14 +200,14 @@ func (c *Client) sendRequest(method string, params interface{}) (json.RawMessage
 
 // Initialize initializes the LSP client
 func (c *Client) Initialize(ctx context.Context, rootURI string) error {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"processId": nil,
-		"clientInfo": map[string]interface{}{
-			"name":    "gopls-mcp",
-			"version": "0.1.0",
+		"clientInfo": map[string]any{
+			"name":    project.Name,
+			"version": project.Version,
 		},
 		"rootUri":      rootURI,
-		"capabilities": map[string]interface{}{},
+		"capabilities": map[string]any{},
 	}
 
 	_, err := c.sendRequest("initialize", params)
@@ -207,12 +216,12 @@ func (c *Client) Initialize(ctx context.Context, rootURI string) error {
 	}
 
 	// Send initialized notification using sendNotification helper
-	return c.sendNotification("initialized", map[string]interface{}{})
+	return c.sendNotification("initialized", map[string]any{})
 }
 
 // sendNotification sends a JSON-RPC notification
-func (c *Client) sendNotification(method string, params interface{}) error {
-	notification := map[string]interface{}{
+func (c *Client) sendNotification(method string, params any) error {
+	notification := map[string]any{
 		"jsonrpc": "2.0",
 		"method":  method,
 		"params":  params,
@@ -235,10 +244,9 @@ func (c *Client) sendNotification(method string, params interface{}) error {
 	return nil
 }
 
-// GoToDefinition implements types.LSPClient
 func (c *Client) GoToDefinition(ctx context.Context, uri string, position types.Position) ([]types.Location, error) {
-	params := map[string]interface{}{
-		"textDocument": map[string]interface{}{
+	params := map[string]any{
+		"textDocument": map[string]any{
 			"uri": uri,
 		},
 		"position": position,
@@ -274,14 +282,13 @@ func (c *Client) GoToDefinition(ctx context.Context, uri string, position types.
 	return locations, nil
 }
 
-// FindReferences implements types.LSPClient
 func (c *Client) FindReferences(ctx context.Context, uri string, position types.Position) ([]types.Location, error) {
-	params := map[string]interface{}{
-		"textDocument": map[string]interface{}{
+	params := map[string]any{
+		"textDocument": map[string]any{
 			"uri": uri,
 		},
 		"position": position,
-		"context": map[string]interface{}{
+		"context": map[string]any{
 			"includeDeclaration": true,
 		},
 	}
@@ -299,10 +306,9 @@ func (c *Client) FindReferences(ctx context.Context, uri string, position types.
 	return locations, nil
 }
 
-// Hover implements types.LSPClient
 func (c *Client) Hover(ctx context.Context, uri string, position types.Position) (string, error) {
-	params := map[string]interface{}{
-		"textDocument": map[string]interface{}{
+	params := map[string]any{
+		"textDocument": map[string]any{
 			"uri": uri,
 		},
 		"position": position,
@@ -314,7 +320,7 @@ func (c *Client) Hover(ctx context.Context, uri string, position types.Position)
 	}
 
 	var hover struct {
-		Contents interface{} `json:"contents"`
+		Contents any `json:"contents"`
 	}
 	if err := json.Unmarshal(response, &hover); err != nil {
 		return "", fmt.Errorf("failed to unmarshal hover response: %w", err)
@@ -324,7 +330,7 @@ func (c *Client) Hover(ctx context.Context, uri string, position types.Position)
 	switch v := hover.Contents.(type) {
 	case string:
 		return v, nil
-	case map[string]interface{}:
+	case map[string]any:
 		if value, ok := v["value"]; ok {
 			return fmt.Sprintf("%v", value), nil
 		}
@@ -333,17 +339,15 @@ func (c *Client) Hover(ctx context.Context, uri string, position types.Position)
 	return fmt.Sprintf("%v", hover.Contents), nil
 }
 
-// GetDiagnostics implements types.LSPClient
 func (c *Client) GetDiagnostics(ctx context.Context, uri string) ([]types.Diagnostic, error) {
 	// Note: Diagnostics are typically sent as notifications, not requests
 	// This is a simplified implementation
 	return []types.Diagnostic{}, nil
 }
 
-// GetCompletion implements types.LSPClient
 func (c *Client) GetCompletion(ctx context.Context, uri string, position types.Position) ([]types.CompletionItem, error) {
-	params := map[string]interface{}{
-		"textDocument": map[string]interface{}{
+	params := map[string]any{
+		"textDocument": map[string]any{
 			"uri": uri,
 		},
 		"position": position,
@@ -364,13 +368,12 @@ func (c *Client) GetCompletion(ctx context.Context, uri string, position types.P
 	return completion.Items, nil
 }
 
-// FormatDocument implements types.LSPClient
 func (c *Client) FormatDocument(ctx context.Context, uri string) ([]json.RawMessage, error) {
-	params := map[string]interface{}{
-		"textDocument": map[string]interface{}{
+	params := map[string]any{
+		"textDocument": map[string]any{
 			"uri": uri,
 		},
-		"options": map[string]interface{}{
+		"options": map[string]any{
 			"tabSize":      4,
 			"insertSpaces": false,
 		},
@@ -389,10 +392,9 @@ func (c *Client) FormatDocument(ctx context.Context, uri string) ([]json.RawMess
 	return edits, nil
 }
 
-// RenameSymbol implements types.LSPClient
 func (c *Client) RenameSymbol(ctx context.Context, uri string, position types.Position, newName string) (map[string][]json.RawMessage, error) {
-	params := map[string]interface{}{
-		"textDocument": map[string]interface{}{
+	params := map[string]any{
+		"textDocument": map[string]any{
 			"uri": uri,
 		},
 		"position": position,
@@ -414,7 +416,6 @@ func (c *Client) RenameSymbol(ctx context.Context, uri string, position types.Po
 	return workspaceEdit.Changes, nil
 }
 
-// Shutdown implements types.LSPClient
 func (c *Client) Shutdown(ctx context.Context) error {
 	_, err := c.sendRequest("shutdown", nil)
 	if err != nil {
@@ -422,7 +423,7 @@ func (c *Client) Shutdown(ctx context.Context) error {
 	}
 
 	// Send exit notification
-	notification := map[string]interface{}{
+	notification := map[string]any{
 		"jsonrpc": "2.0",
 		"method":  "exit",
 	}

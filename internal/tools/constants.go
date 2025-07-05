@@ -1,6 +1,6 @@
 package tools
 
-// Tool name prefix for all gopls MCP tools
+// Tool name prefix for all MCP tools
 const ToolPrefix = "gopls."
 
 // Tool names

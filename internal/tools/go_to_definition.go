@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/mark3labs/mcp-go/mcp"
 	"gopls-mcp/pkg/types"
+
+	"github.com/mark3labs/mcp-go/mcp"
 )
 
 // GoToDefinitionTool handles go-to-definition requests

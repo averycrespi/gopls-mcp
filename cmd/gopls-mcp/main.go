@@ -25,28 +25,24 @@ func main() {
 		LogLevel:      *logLevel,
 	}
 
-	// Validate workspace root
 	if stat, err := os.Stat(config.WorkspaceRoot); err != nil || !stat.IsDir() {
 		log.Fatalf("Invalid workspace root: %s", config.WorkspaceRoot)
 	}
 
-	// Convert to absolute path
 	if absPath, err := filepath.Abs(config.WorkspaceRoot); err == nil {
 		config.WorkspaceRoot = absPath
 	}
 
-	// Create and start the server
 	mcpServer := server.NewServer(config)
 
-	// Register tools
 	if err := mcpServer.RegisterTools(); err != nil {
 		log.Fatalf("Failed to register tools: %v", err)
 	}
 
-	// Start the server (this blocks until server shuts down)
 	if err := mcpServer.Start(); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}
 
 	fmt.Println("Server stopped")
+	os.Exit(0)
 }
