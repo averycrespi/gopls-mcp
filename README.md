@@ -52,67 +52,17 @@ Options:
 
 The server communicates via stdin/stdout using the MCP protocol. It can be integrated with any MCP-compatible client.
 
-#### Claude Desktop Integration
-
-1. **Build the server:**
-   ```bash
-   make build
-   ```
-
-2. **Configure Claude Desktop:**
-   Add the following to your Claude Desktop configuration file:
-
-   **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`  
-   **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-
-   ```json
-   {
-     "mcpServers": {
-       "gopls-mcp": {
-         "command": "/absolute/path/to/gopls-mcp/bin/gopls-mcp",
-         "args": ["-workspace-root", "/absolute/path/to/your/go/project"]
-       }
-     }
-   }
-   ```
-
-3. **Restart Claude Desktop** to load the new MCP server.
-
-4. **Verify the connection:**
-   - Look for the 🔌 icon in Claude Desktop indicating MCP servers are connected
-   - You should see "gopls-mcp" listed as an available server
-   - The server will provide 6 tools for Go code analysis
-
-#### Claude Code Integration
-
-If you're using Claude Code (CLI), you can add gopls-mcp to your CLAUDE.md file:
-
-```markdown
-# Project Configuration
-
-## MCP Servers
-
-This project uses gopls-mcp for enhanced Go development support.
-
-### Setup
-1. Build: `make build`
-2. The server provides Go language analysis via gopls integration
-3. Available tools: go_to_definition, find_references, hover_info, get_completion, format_code, rename_symbol
-
-### Usage
-Ask Claude to use the Go analysis tools when working with .go files in this project.
+Example configuration:
+```json
+{
+  "mcpServers": {
+    "gopls-mcp": {
+      "command": "/path/to/gopls-mcp",
+      "args": ["-workspace-root", "/path/to/your/go/project"]
+    }
+  }
+}
 ```
-
-#### Example Usage
-
-Once configured, you can ask Claude to:
-- "Find where the `ExampleFunction` is defined"
-- "Show me all references to this variable"
-- "Get completion suggestions at this position"
-- "Format this Go file"
-- "Rename this function across the entire project"
-
-The tools work with file paths relative to your workspace root.
 
 ## Available MCP Tools
 
