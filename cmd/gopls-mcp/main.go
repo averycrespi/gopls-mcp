@@ -36,6 +36,7 @@ func main() {
 	}
 
 	srv := server.NewGoplsServer(config)
+	log.Printf("Serving Gopls MCP server with config: %+v", config)
 	if err := srv.Serve(context.Background()); err != nil {
 		log.Fatalf("Failed to serve Gopls MCP server: %v", err)
 	}

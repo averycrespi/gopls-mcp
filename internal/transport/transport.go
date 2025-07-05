@@ -44,13 +44,13 @@ func (t *JsonRpcTransport) Start() error {
 }
 
 func (t *JsonRpcTransport) Stop() error {
-	if !t.isDone() {
+	if !t.isClosed() {
 		close(t.done)
 	}
 	return nil
 }
 
-func (t *JsonRpcTransport) isDone() bool {
+func (t *JsonRpcTransport) isClosed() bool {
 	select {
 	case <-t.done:
 		return true
@@ -64,7 +64,7 @@ func (t *JsonRpcTransport) readResponses() {
 
 	for {
 		// Read one response at a time until the transport is closed
-		if t.isDone() {
+		if t.isClosed() {
 			return
 		}
 
@@ -137,6 +137,10 @@ func (t *JsonRpcTransport) handleResponse(content []byte) {
 
 // SendRequest sends a JSON-RPC request and waits for the response
 func (t *JsonRpcTransport) SendRequest(method string, params any) (json.RawMessage, error) {
+	if t.isClosed() {
+		return nil, fmt.Errorf("cannot send request: transport is closed")
+	}
+
 	id := atomic.AddInt64(&t.requestID, 1)
 
 	request := map[string]any{
@@ -176,6 +180,10 @@ func (t *JsonRpcTransport) SendRequest(method string, params any) (json.RawMessa
 
 // SendNotification sends a JSON-RPC notification (no response expected)
 func (t *JsonRpcTransport) SendNotification(method string, params any) error {
+	if t.isClosed() {
+		return fmt.Errorf("cannot send notification: transport is closed")
+	}
+
 	notification := map[string]any{
 		"jsonrpc": "2.0",
 		"method":  method,
