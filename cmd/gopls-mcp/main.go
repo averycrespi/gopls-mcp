@@ -1,14 +1,11 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
 	"os"
-	"os/signal"
 	"path/filepath"
-	"syscall"
 
 	"gopls-mcp/internal/server"
 	"gopls-mcp/pkg/types"
@@ -38,29 +35,17 @@ func main() {
 		config.WorkspaceRoot = absPath
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Handle graceful shutdown
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
+	// Create and start the server
 	mcpServer := server.NewServer(config)
 
-	// Start server in a goroutine
-	go func() {
-		if err := mcpServer.Start(ctx); err != nil {
-			log.Fatalf("Failed to start server: %v", err)
-		}
-	}()
+	// Register tools
+	if err := mcpServer.RegisterTools(); err != nil {
+		log.Fatalf("Failed to register tools: %v", err)
+	}
 
-	// Wait for shutdown signal
-	<-sigChan
-	log.Println("Shutting down...")
-
-	// Shutdown gracefully
-	if err := mcpServer.Shutdown(ctx); err != nil {
-		log.Printf("Error during shutdown: %v", err)
+	// Start the server (this blocks until server shuts down)
+	if err := mcpServer.Start(); err != nil {
+		log.Fatalf("Server error: %v", err)
 	}
 
 	fmt.Println("Server stopped")

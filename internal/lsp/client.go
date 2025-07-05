@@ -1,16 +1,14 @@
 package lsp
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os/exec"
-	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"gopls-mcp/pkg/types"
 )
@@ -43,7 +41,7 @@ func NewClient(goplsPath string) *Client {
 
 // Start starts the gopls process
 func (c *Client) Start(ctx context.Context, goplsPath string) error {
-	cmd := exec.CommandContext(ctx, goplsPath, "-mode=stdio")
+	cmd := exec.CommandContext(ctx, goplsPath, "serve")
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -71,6 +69,9 @@ func (c *Client) Start(ctx context.Context, goplsPath string) error {
 
 	go c.readResponses()
 
+	// Give gopls a moment to start
+	time.Sleep(100 * time.Millisecond)
+
 	return nil
 }
 
@@ -78,32 +79,34 @@ func (c *Client) Start(ctx context.Context, goplsPath string) error {
 func (c *Client) readResponses() {
 	defer close(c.done)
 
-	scanner := bufio.NewScanner(c.stdout)
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		if !strings.HasPrefix(line, "Content-Length:") {
-			continue
+	for {
+		// Read Content-Length header byte by byte until we find \r\n\r\n
+		var contentLength int
+		var header []byte
+		
+		for {
+			b := make([]byte, 1)
+			if _, err := c.stdout.Read(b); err != nil {
+				return
+			}
+			header = append(header, b[0])
+			
+			if len(header) >= 4 && string(header[len(header)-4:]) == "\r\n\r\n" {
+				headerStr := string(header)
+				if _, err := fmt.Sscanf(headerStr, "Content-Length: %d\r\n\r\n", &contentLength); err != nil {
+					continue
+				}
+				break
+			}
 		}
-
-		lengthStr := strings.TrimSpace(strings.TrimPrefix(line, "Content-Length:"))
-		length, err := strconv.Atoi(lengthStr)
-		if err != nil {
-			continue
+		
+		// Read the JSON response body
+		body := make([]byte, contentLength)
+		if _, err := io.ReadFull(c.stdout, body); err != nil {
+			return
 		}
-
-		// Read empty line
-		if !scanner.Scan() {
-			break
-		}
-
-		// Read content
-		content := make([]byte, length)
-		if _, err := io.ReadFull(c.stdout, content); err != nil {
-			break
-		}
-
-		c.handleResponse(content)
+		
+		c.handleResponse(body)
 	}
 }
 
@@ -177,27 +180,25 @@ func (c *Client) sendRequest(method string, params interface{}) (json.RawMessage
 		return nil, fmt.Errorf("failed to write data: %w", err)
 	}
 
-	response := <-ch
-	return response, nil
+	// Wait for response with timeout
+	select {
+	case response := <-ch:
+		return response, nil
+	case <-time.After(10 * time.Second):
+		return nil, fmt.Errorf("timeout waiting for response to method %s", method)
+	}
 }
 
 // Initialize initializes the LSP client
 func (c *Client) Initialize(ctx context.Context, rootURI string) error {
 	params := map[string]interface{}{
 		"processId": nil,
-		"rootUri":   rootURI,
-		"capabilities": map[string]interface{}{
-			"textDocument": map[string]interface{}{
-				"definition": map[string]interface{}{
-					"linkSupport": true,
-				},
-				"references": map[string]interface{}{},
-				"hover":      map[string]interface{}{},
-				"completion": map[string]interface{}{},
-				"formatting": map[string]interface{}{},
-				"rename":     map[string]interface{}{},
-			},
+		"clientInfo": map[string]interface{}{
+			"name":    "gopls-mcp",
+			"version": "0.1.0",
 		},
+		"rootUri":      rootURI,
+		"capabilities": map[string]interface{}{},
 	}
 
 	_, err := c.sendRequest("initialize", params)
@@ -205,25 +206,30 @@ func (c *Client) Initialize(ctx context.Context, rootURI string) error {
 		return fmt.Errorf("failed to initialize: %w", err)
 	}
 
-	// Send initialized notification
+	// Send initialized notification using sendNotification helper
+	return c.sendNotification("initialized", map[string]interface{}{})
+}
+
+// sendNotification sends a JSON-RPC notification
+func (c *Client) sendNotification(method string, params interface{}) error {
 	notification := map[string]interface{}{
 		"jsonrpc": "2.0",
-		"method":  "initialized",
-		"params":  map[string]interface{}{},
+		"method":  method,
+		"params":  params,
 	}
 
 	data, err := json.Marshal(notification)
 	if err != nil {
-		return fmt.Errorf("failed to marshal initialized notification: %w", err)
+		return fmt.Errorf("failed to marshal notification: %w", err)
 	}
 
 	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(data))
 	if _, err := c.stdin.Write([]byte(header)); err != nil {
-		return fmt.Errorf("failed to write initialized header: %w", err)
+		return fmt.Errorf("failed to write notification header: %w", err)
 	}
 
 	if _, err := c.stdin.Write(data); err != nil {
-		return fmt.Errorf("failed to write initialized data: %w", err)
+		return fmt.Errorf("failed to write notification data: %w", err)
 	}
 
 	return nil
@@ -243,9 +249,26 @@ func (c *Client) GoToDefinition(ctx context.Context, uri string, position types.
 		return nil, fmt.Errorf("failed to get definition: %w", err)
 	}
 
-	var locations []types.Location
-	if err := json.Unmarshal(response, &locations); err != nil {
+	// LSP definition response can be null, Location, or Location[]
+	var rawResponse json.RawMessage
+	if err := json.Unmarshal(response, &rawResponse); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal definition response: %w", err)
+	}
+
+	// Handle null response
+	if string(rawResponse) == "null" {
+		return []types.Location{}, nil
+	}
+
+	// Try to unmarshal as array first
+	var locations []types.Location
+	if err := json.Unmarshal(rawResponse, &locations); err != nil {
+		// If that fails, try to unmarshal as single location
+		var location types.Location
+		if err := json.Unmarshal(rawResponse, &location); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal definition response: %w", err)
+		}
+		locations = []types.Location{location}
 	}
 
 	return locations, nil

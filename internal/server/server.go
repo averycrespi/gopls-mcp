@@ -33,20 +33,30 @@ func NewServer(config *types.Config) *Server {
 	}
 }
 
+// RegisterTools registers all MCP tools
+func (s *Server) RegisterTools() error {
+	return s.registerTools()
+}
+
 // Start starts the MCP server
-func (s *Server) Start(ctx context.Context) error {
-	if err := s.registerTools(); err != nil {
-		return fmt.Errorf("failed to register tools: %w", err)
-	}
+func (s *Server) Start() error {
+	log.Printf("gopls-mcp server starting with workspace: %s", s.config.WorkspaceRoot)
 
-	if err := s.lspManager.Initialize(ctx, s.config.WorkspaceRoot); err != nil {
-		return fmt.Errorf("failed to initialize LSP manager: %w", err)
-	}
+	// Initialize LSP manager in background (don't block MCP server startup)
+	go func() {
+		ctx := context.Background()
+		log.Printf("Initializing LSP manager with workspace: %s", s.config.WorkspaceRoot)
+		
+		if err := s.lspManager.Initialize(ctx, s.config.WorkspaceRoot); err != nil {
+			log.Printf("Failed to initialize LSP manager: %v", err)
+			// Continue without LSP - tools will return appropriate errors
+		} else {
+			s.initialized = true
+			log.Printf("LSP manager initialized successfully")
+		}
+	}()
 
-	s.initialized = true
-
-	log.Printf("gopls-mcp server started with workspace: %s", s.config.WorkspaceRoot)
-
+	log.Printf("gopls-mcp server started")
 	return server.ServeStdio(s.mcpServer)
 }
 
@@ -75,6 +85,10 @@ func (s *Server) registerTools() error {
 func (s *Server) wrapHandler(handler func(context.Context, types.LSPClient, *types.Config, mcp.CallToolRequest) (*mcp.CallToolResult, error)) func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		lspClient := s.lspManager.GetClient()
+		if lspClient == nil && s.lspManager.IsInitialized() {
+			// LSP manager is initialized but client is nil, something is wrong
+			return mcp.NewToolResultError("LSP client is unavailable"), nil
+		}
 		return handler(ctx, lspClient, s.config, req)
 	}
 }
