@@ -11,10 +11,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `make dev` - Build and run server with current directory as workspace
 - `make clean` - Clean build artifacts and caches
 
+### MCP Tool Testing
+- `make test-symbol-definition` - Test symbol_definition tool with pretty-printed JSON output
+- `make test-symbol-references` - Test symbol_references tool with pretty-printed JSON output
+- `make test-file-symbols` - Test file_symbols tool with pretty-printed JSON output
+- Uses `scripts/test-mcp-tool.sh` for JSON extraction and formatting
+
 ### Dependencies
 - `make deps` - Download and tidy Go modules
 - `make install-gopls` - Install gopls language server if not present
 - Requires Go 1.23+ and gopls to be available
+- `jq` - Required for pretty-printing JSON in MCP tool tests
 
 ### Running the Server
 - `make run WORKSPACE=/path/to/go/project` - Run with specific workspace

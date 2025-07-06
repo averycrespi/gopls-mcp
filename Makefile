@@ -35,28 +35,15 @@ run:
 
 # Test symbol definition tool
 test-symbol-definition: build
-	@echo "Testing symbol_definition tool..."
-	@timeout 10s bash -c '{ \
-		tr -d "\n" < ./testdata/mcp_init.json; echo ""; \
-		sleep 1; \
-		tr -d "\n" < ./testdata/symbol_definition_test.json; echo ""; \
-	} | ./bin/gopls-mcp -workspace-root ./testdata/example || true'
+	@./scripts/test-mcp-tool.sh symbol_definition
 
 # Test symbol references tool
 test-symbol-references: build
-	@timeout 10s bash -c '{ \
-		tr -d "\n" < ./testdata/mcp_init.json; echo ""; \
-		sleep 1; \
-		tr -d "\n" < ./testdata/symbol_references_test.json; echo ""; \
-	} | ./bin/gopls-mcp -workspace-root ./testdata/example || true'
+	@./scripts/test-mcp-tool.sh symbol_references
 
 # Test file symbols tool
 test-file-symbols: build
-	@timeout 10s bash -c '{ \
-		tr -d "\n" < ./testdata/mcp_init.json; echo ""; \
-		sleep 1; \
-		tr -d "\n" < ./testdata/file_symbols_test.json; echo ""; \
-	} | ./bin/gopls-mcp -workspace-root ./testdata/example || true'
+	@./scripts/test-mcp-tool.sh file_symbols
 
 
 # Show help
