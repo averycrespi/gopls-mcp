@@ -90,9 +90,14 @@ Find the definition of a symbol by name.
 Find all references to a symbol.
 
 **Parameters:**
-- `file_path` (string): Path to the Go file
-- `line` (number): Line number (0-based)
-- `character` (number): Character position (0-based)
+- `symbol_name` (string): Symbol name to find references for
+
+**Response:** JSON array of symbol reference objects, each containing:
+- `name`: Symbol name
+- `kind`: Symbol type (function, struct, method, etc.)
+- `location`: File path, line, and character position of the symbol definition
+- `source`: Source code context with line highlighting (if available)
+- `references`: Array of locations where the symbol is referenced
 
 
 ## Architecture

@@ -186,6 +186,27 @@ func validateSymbolDefinitionResult(t *testing.T, jsonContent string, expectedSy
 	}
 }
 
+// validateSymbolReferenceResult validates the structure of a symbol reference result
+func validateSymbolReferenceResult(t *testing.T, jsonContent string, expectedSymbol string) {
+	var results []results.SymbolReferenceResult
+	err := json.Unmarshal([]byte(jsonContent), &results)
+	assert.NoError(t, err, "Should be able to unmarshal symbol reference results")
+
+	// Validate basic structure
+	assert.Greater(t, len(results), 0, "Should have found at least one symbol")
+
+	// Validate first symbol
+	firstSymbol := results[0]
+	assert.Equal(t, expectedSymbol, firstSymbol.Name, "First symbol name should match")
+	assert.NotEmpty(t, firstSymbol.Kind, "Symbol kind should not be empty")
+	assert.NotEmpty(t, firstSymbol.Location.File, "Symbol file should not be empty")
+	assert.Greater(t, firstSymbol.Location.Line, 0, "Symbol line should be positive")
+	assert.NotNil(t, firstSymbol.References, "References should not be nil")
+	if firstSymbol.Source != nil {
+		assert.NotEmpty(t, firstSymbol.Source.Lines, "Source context should have lines")
+	}
+}
+
 
 // initialize sends the MCP initialize request
 func (s *MCPServerProcess) initialize(t *testing.T) {
@@ -300,12 +321,7 @@ func TestMCPServerIntegration(t *testing.T) {
 
 
 	t.Run("SymbolReferences", func(t *testing.T) {
-		// Test symbol references on Calculator type in calculator.go
-		// calculator.go line 6: type Calculator struct {
-		//                            ^
-		//                        char 5 (0-based)
-		calcFile := filepath.Join(workspaceRoot, "calculator.go")
-
+		// Test symbol references by searching for "Calculator" symbol
 		req := MCPRequest{
 			JSONRPC: "2.0",
 			ID:      5,
@@ -313,9 +329,7 @@ func TestMCPServerIntegration(t *testing.T) {
 			Params: map[string]any{
 				"name": "symbol_references",
 				"arguments": map[string]any{
-					"file_path": calcFile,
-					"line":      5, // Zero-based: line 6 in editor
-					"character": 5, // Zero-based: position of "Calculator"
+					"symbol_name": "Calculator",
 				},
 			},
 		}
@@ -323,19 +337,16 @@ func TestMCPServerIntegration(t *testing.T) {
 		resp := server.sendRequest(t, req)
 		assert.Nil(t, resp.Error, "Symbol references should not return an error")
 
-		// Validate that we got symbol references content
+		// Validate that we got a references result
 		var result map[string]any
 		err := json.Unmarshal(resp.Result, &result)
 		assert.NoError(t, err, "Should be able to unmarshal symbol references result")
 
-		content, ok := result["content"]
-		assert.True(t, ok, "Expected content in symbol references result")
+		// Parse and validate the JSON response structure
+		contentStr := parseToolResult(t, result)
+		validateSymbolReferenceResult(t, contentStr, "Calculator")
 
-		// Should contain reference information
-		contentStr := fmt.Sprintf("%v", content)
-		assert.Contains(t, contentStr, "reference", "Response should contain reference information")
-		assert.Contains(t, contentStr, "calculator.go", "Response should reference calculator.go file")
-		t.Logf("Symbol references content: %v", content)
+		t.Logf("Symbol references content: %v", contentStr)
 	})
 
 }

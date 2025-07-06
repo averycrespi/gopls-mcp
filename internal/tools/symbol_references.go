@@ -2,11 +2,18 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 
+	"github.com/averycrespi/gopls-mcp/internal/results"
 	"github.com/averycrespi/gopls-mcp/pkg/types"
 
 	"github.com/mark3labs/mcp-go/mcp"
+)
+
+const (
+	referenceContextLines = 0 // disable extra context for now
 )
 
 // SymbolReferencesTool handles symbol-references requests
@@ -27,30 +34,69 @@ func NewSymbolReferencesTool(client types.Client, config types.Config) *SymbolRe
 func (t *SymbolReferencesTool) GetTool() mcp.Tool {
 	tool := mcp.NewTool("symbol_references",
 		mcp.WithDescription("Find all references to a symbol in Go code"),
-		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
-		mcp.WithNumber("line", mcp.Required(), mcp.Description("Line number (0-based)")),
-		mcp.WithNumber("character", mcp.Required(), mcp.Description("Character position (0-based)")),
+		mcp.WithString("symbol_name", mcp.Required(), mcp.Description("Symbol name to find references for")),
 	)
 	return tool
 }
 
 // Handle processes the tool request
 func (t *SymbolReferencesTool) Handle(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	filePath := mcp.ParseString(req, "file_path", "")
-	if filePath == "" {
-		return mcp.NewToolResultError("file_path parameter is required"), nil
+	symbolName := mcp.ParseString(req, "symbol_name", "")
+	if symbolName == "" {
+		return mcp.NewToolResultError("symbol_name parameter is required"), nil
 	}
 
-	position, err := GetPosition(req)
+	symbols, err := t.client.FuzzyFindSymbol(ctx, symbolName)
 	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to search workspace symbols: %v", err)), nil
 	}
 
-	uri := PathToUri(filePath, t.config.WorkspaceRoot)
-	locations, err := t.client.FindReferences(ctx, uri, position)
+	var symbolResults []results.SymbolReferenceResult
+	for _, sym := range symbols {
+		locations, err := t.client.FindReferences(ctx, sym.Location.URI, sym.Location.Range.Start)
+		if err != nil {
+			continue
+		}
+
+		var references []results.SymbolLocation
+		for _, loc := range locations {
+			references = append(references, results.SymbolLocation{
+				File:      GetRelativePath(UriToPath(loc.URI), t.config.WorkspaceRoot),
+				Line:      loc.Range.Start.Line + 1,      // convert to 1-indexed line numbers
+				Character: loc.Range.Start.Character + 1, // convert to 1-indexed character numbers
+			})
+		}
+
+		entry := results.SymbolReferenceResult{
+			Name: sym.Name,
+			Kind: results.NewSymbolKind(sym.Kind),
+			Location: results.SymbolLocation{
+				File:      GetRelativePath(UriToPath(sym.Location.URI), t.config.WorkspaceRoot),
+				Line:      sym.Location.Range.Start.Line + 1,      // convert to 1-indexed line numbers
+				Character: sym.Location.Range.Start.Character + 1, // convert to 1-indexed character numbers
+			},
+			References: references,
+		}
+
+		// Try to enhance with source context
+		if file, err := os.Open(UriToPath(sym.Location.URI)); err == nil {
+			defer file.Close()
+			if sourceContext, contextErr := ReadSourceContext(file, sym.Location.Range.Start.Line, referenceContextLines); contextErr == nil {
+				entry.Source = sourceContext
+			}
+		}
+
+		symbolResults = append(symbolResults, entry)
+	}
+
+	if len(symbolResults) == 0 {
+		return mcp.NewToolResultText(fmt.Sprintf("No results for symbol name: %s", symbolName)), nil
+	}
+
+	jsonBytes, err := json.MarshalIndent(symbolResults, "", "  ")
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to find references: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal JSON: %v", err)), nil
 	}
 
-	return mcp.NewToolResultText(fmt.Sprintf("Found %d reference(s): %+v", len(locations), locations)), nil
+	return mcp.NewToolResultText(string(jsonBytes)), nil
 }
