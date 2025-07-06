@@ -74,7 +74,7 @@ func (t *SymbolSearchTool) Handle(ctx context.Context, req mcp.CallToolRequest) 
 		}
 
 		// Try to enhance the result with hover information
-		if hoverInfo, err := t.client.Hover(ctx, sym.Location.URI, sym.Location.Range.Start); err == nil && hoverInfo != "" {
+		if hoverInfo, err := t.client.GetHoverInfo(ctx, sym.Location.URI, sym.Location.Range.Start); err == nil && hoverInfo != "" {
 			entry.Documentation = hoverInfo
 		}
 

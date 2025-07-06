@@ -197,7 +197,7 @@ func (c *GoplsClient) FindReferences(ctx context.Context, uri string, position t
 	return locations, nil
 }
 
-func (c *GoplsClient) Hover(ctx context.Context, uri string, position types.Position) (string, error) {
+func (c *GoplsClient) GetHoverInfo(ctx context.Context, uri string, position types.Position) (string, error) {
 	params := map[string]any{
 		"textDocument": map[string]any{
 			"uri": uri,

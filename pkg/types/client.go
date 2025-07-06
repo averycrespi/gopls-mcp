@@ -11,7 +11,7 @@ type Client interface {
 
 	GoToDefinition(ctx context.Context, uri string, position Position) ([]Location, error)
 	FindReferences(ctx context.Context, uri string, position Position) ([]Location, error)
-	Hover(ctx context.Context, uri string, position Position) (string, error)
+	GetHoverInfo(ctx context.Context, uri string, position Position) (string, error)
 	GetCompletion(ctx context.Context, uri string, position Position) ([]CompletionItem, error)
 	FuzzyFindSymbol(ctx context.Context, query string) ([]SymbolInformation, error)
 }

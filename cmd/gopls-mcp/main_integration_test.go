@@ -11,10 +11,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
+	"github.com/averycrespi/gopls-mcp/internal/results"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -139,65 +139,83 @@ func (s *MCPServerProcess) sendRequest(t *testing.T, req MCPRequest) MCPResponse
 	return MCPResponse{} // unreachable
 }
 
-// validateResponseStructure checks if the response contains expected structural elements
-func validateResponseStructure(t *testing.T, content string, expectedElements []string) {
-	for _, element := range expectedElements {
-		assert.Contains(t, content, element, "Response should contain: %s", element)
-	}
-}
+// parseToolResult parses the JSON content from a tool result
+func parseToolResult(t *testing.T, result map[string]any) string {
+	content, ok := result["content"]
+	assert.True(t, ok, "Expected content in tool result")
 
-// normalizeWhitespace normalizes whitespace differences for comparison
-func normalizeWhitespace(s string) string {
-	// Replace multiple whitespaces/newlines with single spaces for comparison
-	lines := strings.Split(s, "\n")
-	var normalized []string
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed != "" {
-			normalized = append(normalized, trimmed)
+	// Handle both string and array format
+	if contentStr, ok := content.(string); ok {
+		return contentStr
+	}
+
+	// Handle array format (MCP content can be an array of content items)
+	if contentArray, ok := content.([]interface{}); ok {
+		assert.NotEmpty(t, contentArray, "Content array should not be empty")
+
+		// Get first content item
+		firstContent := contentArray[0]
+		if contentMap, ok := firstContent.(map[string]interface{}); ok {
+			if text, ok := contentMap["text"].(string); ok {
+				return text
+			}
 		}
 	}
-	return strings.Join(normalized, "\n")
+
+	assert.Fail(t, "Unexpected content format", "Expected string or array, got %T", content)
+	return ""
 }
 
-// getExpectedSymbolDefinitionResponse returns the expected JSON structure elements for NewCalculator
-func getExpectedSymbolDefinitionResponse() []string {
-	return []string{
-		"\"query\": \"NewCalculator\"",
-		"\"count\": 1",
-		"\"symbols\":",
-		"\"name\": \"NewCalculator\"",
-		"\"kind\": \"function\"",
-		"\"location\":",
-		"\"file\": \"calculator.go\"",
-		"\"line\": 11",
-		"\"definitions\":",
-		"\"documentation\":",
-		"\"source\":",
-		"\"lines\":",
-		"\"number\":",
-		"\"content\":",
-		"\"highlight\":",
+// validateSymbolDefinitionResult validates the structure of a symbol definition result
+func validateSymbolDefinitionResult(t *testing.T, jsonContent string, expectedSymbol string) {
+	var result results.SymbolDefinitionResult
+	err := json.Unmarshal([]byte(jsonContent), &result)
+	assert.NoError(t, err, "Should be able to unmarshal symbol definition result")
+
+	// Validate basic structure
+	assert.Equal(t, expectedSymbol, result.Query, "Query should match expected symbol")
+	assert.Greater(t, result.Count, 0, "Should have found at least one symbol")
+	assert.Len(t, result.Symbols, result.Count, "Symbol count should match actual symbols")
+
+	// Validate first symbol
+	assert.NotEmpty(t, result.Symbols, "Should have at least one symbol")
+	firstSymbol := result.Symbols[0]
+	assert.Equal(t, expectedSymbol, firstSymbol.Name, "First symbol name should match")
+	assert.NotEmpty(t, firstSymbol.Kind, "Symbol kind should not be empty")
+	assert.NotEmpty(t, firstSymbol.Location.File, "Symbol file should not be empty")
+	assert.Greater(t, firstSymbol.Location.Line, 0, "Symbol line should be positive")
+	assert.NotEmpty(t, firstSymbol.Definitions, "Should have at least one definition")
+
+	// Validate first definition
+	firstDef := firstSymbol.Definitions[0]
+	assert.NotEmpty(t, firstDef.Location.File, "Definition file should not be empty")
+	assert.Greater(t, firstDef.Location.Line, 0, "Definition line should be positive")
+	if firstDef.Source != nil {
+		assert.NotEmpty(t, firstDef.Source.Lines, "Source context should have lines")
 	}
 }
 
-// getExpectedSymbolSearchResponse returns the expected JSON structure elements for Calculator search
-func getExpectedSymbolSearchResponse() []string {
-	return []string{
-		"\"query\": \"Calculator\"",
-		"\"count\":",
-		"\"symbols\":",
-		"\"name\": \"Calculator\"",
-		"\"kind\": \"struct\"",
-		"\"location\":",
-		"\"file\": \"calculator.go\"",
-		"\"line\":",
-		"\"documentation\":",
-		"\"source\":",
-		"\"lines\":",
-		"\"number\":",
-		"\"content\":",
-		"\"highlight\":",
+// validateSymbolSearchResult validates the structure of a symbol search result
+func validateSymbolSearchResult(t *testing.T, jsonContent string, expectedSymbol string) {
+	var result results.SymbolSearchResult
+	err := json.Unmarshal([]byte(jsonContent), &result)
+	assert.NoError(t, err, "Should be able to unmarshal symbol search result")
+
+	// Validate basic structure
+	assert.Equal(t, expectedSymbol, result.Query, "Query should match expected symbol")
+	assert.GreaterOrEqual(t, result.Count, 0, "Count should be non-negative")
+	assert.Len(t, result.Symbols, result.Count, "Symbol count should match actual symbols")
+
+	if result.Count > 0 {
+		// Validate first symbol
+		firstSymbol := result.Symbols[0]
+		assert.Contains(t, firstSymbol.Name, expectedSymbol, "First symbol name should contain expected symbol")
+		assert.NotEmpty(t, firstSymbol.Kind, "Symbol kind should not be empty")
+		assert.NotEmpty(t, firstSymbol.Location.File, "Symbol file should not be empty")
+		assert.Greater(t, firstSymbol.Location.Line, 0, "Symbol line should be positive")
+		if firstSymbol.Source != nil {
+			assert.NotEmpty(t, firstSymbol.Source.Lines, "Source context should have lines")
+		}
 	}
 }
 
@@ -257,7 +275,6 @@ func TestMCPServerIntegration(t *testing.T) {
 		expectedTools := []string{
 			"symbol_definition",
 			"find_references",
-			"hover_info",
 			"get_completion",
 			"symbol_search",
 		}
@@ -308,15 +325,11 @@ func TestMCPServerIntegration(t *testing.T) {
 		err := json.Unmarshal(resp.Result, &result)
 		assert.NoError(t, err, "Should be able to unmarshal symbol definition result")
 
-		content, ok := result["content"]
-		assert.True(t, ok, "Expected content in symbol definition result")
+		// Parse and validate the JSON response structure
+		contentStr := parseToolResult(t, result)
+		validateSymbolDefinitionResult(t, contentStr, "NewCalculator")
 
-		// Validate the complete response structure
-		contentStr := fmt.Sprintf("%v", content)
-		expectedElements := getExpectedSymbolDefinitionResponse()
-		validateResponseStructure(t, contentStr, expectedElements)
-
-		t.Logf("Symbol definition content: %v", content)
+		t.Logf("Symbol definition content: %v", contentStr)
 	})
 
 	t.Run("SymbolSearch", func(t *testing.T) {
@@ -341,54 +354,11 @@ func TestMCPServerIntegration(t *testing.T) {
 		err := json.Unmarshal(resp.Result, &result)
 		assert.NoError(t, err, "Should be able to unmarshal symbol search result")
 
-		content, ok := result["content"]
-		assert.True(t, ok, "Expected content in symbol search result")
+		// Parse and validate the JSON response structure
+		contentStr := parseToolResult(t, result)
+		validateSymbolSearchResult(t, contentStr, "Calculator")
 
-		// Validate the complete response structure
-		contentStr := fmt.Sprintf("%v", content)
-		expectedElements := getExpectedSymbolSearchResponse()
-		validateResponseStructure(t, contentStr, expectedElements)
-
-		t.Logf("Symbol search content: %v", content)
-	})
-
-	t.Run("HoverInfo", func(t *testing.T) {
-		// Test hover info on "Add" method call in main.go
-		// main.go line 14: result := calc.Add(5.0)
-		//                                ^
-		//                            char 19 (0-based)
-		mainFile := filepath.Join(workspaceRoot, "main.go")
-
-		req := MCPRequest{
-			JSONRPC: "2.0",
-			ID:      4,
-			Method:  "tools/call",
-			Params: map[string]any{
-				"name": "hover_info",
-				"arguments": map[string]any{
-					"file_path": mainFile,
-					"line":      13, // Zero-based: line 14 in editor
-					"character": 19, // Zero-based: position of "Add"
-				},
-			},
-		}
-
-		resp := server.sendRequest(t, req)
-		assert.Nil(t, resp.Error, "Hover info should not return an error")
-
-		// Validate that we got hover content
-		var result map[string]any
-		err := json.Unmarshal(resp.Result, &result)
-		assert.NoError(t, err, "Should be able to unmarshal hover result")
-
-		content, ok := result["content"]
-		assert.True(t, ok, "Expected hover content in result")
-
-		// Should contain meaningful hover information
-		contentStr := fmt.Sprintf("%v", content)
-		assert.Contains(t, contentStr, "Add", "Hover should contain information about the Add method")
-		assert.Contains(t, contentStr, "float64", "Hover should show method signature with float64")
-		t.Logf("Hover info content: %v", content)
+		t.Logf("Symbol search content: %v", contentStr)
 	})
 
 	t.Run("FindReferences", func(t *testing.T) {

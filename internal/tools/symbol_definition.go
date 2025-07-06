@@ -27,7 +27,7 @@ func NewSymbolDefinitionTool(client types.Client, config types.Config) *SymbolDe
 
 // GetTool returns the MCP tool definition
 func (t *SymbolDefinitionTool) GetTool() mcp.Tool {
-	tool := mcp.NewTool(ToolSymbolDefinition,
+	tool := mcp.NewTool("symbol_definition",
 		mcp.WithDescription("Find the definition of a symbol in Go code"),
 		mcp.WithString("symbol", mcp.Required(), mcp.Description("Symbol name to find the definition for")),
 	)
@@ -94,7 +94,7 @@ func (t *SymbolDefinitionTool) Handle(ctx context.Context, req mcp.CallToolReque
 				}
 
 				// Try to get hover information for the definition
-				if hoverInfo, hoverErr := t.client.Hover(ctx, def.URI, def.Range.Start); hoverErr == nil && hoverInfo != "" {
+				if hoverInfo, hoverErr := t.client.GetHoverInfo(ctx, def.URI, def.Range.Start); hoverErr == nil && hoverInfo != "" {
 					defInfo.Documentation = hoverInfo
 				}
 

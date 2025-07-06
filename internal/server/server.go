@@ -54,9 +54,6 @@ func (s *GoplsServer) registerTools() {
 	findRefsTool := tools.NewFindReferencesTool(s.goplsClient, s.config)
 	s.mcpServer.AddTool(findRefsTool.GetTool(), findRefsTool.Handle)
 
-	hoverTool := tools.NewHoverInfoTool(s.goplsClient, s.config)
-	s.mcpServer.AddTool(hoverTool.GetTool(), hoverTool.Handle)
-
 	completionTool := tools.NewGetCompletionTool(s.goplsClient, s.config)
 	s.mcpServer.AddTool(completionTool.GetTool(), completionTool.Handle)
 

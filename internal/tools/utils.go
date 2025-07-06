@@ -13,10 +13,8 @@ import (
 
 // Tool names
 const (
-	ToolSymbolDefinition = "symbol_definition"
-	ToolFindReferences   = "find_references"
-	ToolHoverInfo        = "hover_info"
-	ToolGetCompletion    = "get_completion"
+	ToolFindReferences = "find_references"
+	ToolGetCompletion  = "get_completion"
 )
 
 // getFileURI converts a file path to a file URI
