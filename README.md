@@ -49,7 +49,8 @@ go run github.com/averycrespi/gopls-mcp@latest
 
 ### Build from Source
 ```bash
-git clone https://github.com/averycrespi/gopls-mcp && cd gopls-mcp
+git clone https://github.com/averycrespi/gopls-mcp
+cd gopls-mcp
 make build
 ```
 
@@ -65,53 +66,6 @@ Flags:
       --workspace-root string   Root directory of the Go workspace (default ".")
   -h, --help                    help for gopls-mcp
 ```
-
-### Logging and Debugging
-
-The server uses structured JSON logging to stderr, making it easy to parse and analyze logs programmatically. The `--log-level` flag controls the verbosity:
-
-#### Log Levels
-
-- **`error`**: Only critical errors that prevent operation
-- **`warn`**: Warning messages (currently unused, reserved for future use)  
-- **`info`**: High-level operational messages (startup, configuration)
-- **`debug`**: Detailed execution traces with timing and context
-
-#### Debug Logging Features
-
-When using `--log-level debug`, you get comprehensive visibility into:
-
-**Server Operations:**
-- Server startup and tool registration
-- Gopls process management (PID tracking)
-- MCP tool invocation and completion
-
-**LSP Communication:**
-- JSON-RPC request/response timing in milliseconds
-- Method names and request IDs for correlation
-- Transport lifecycle events
-
-**Tool Execution:**
-- Parameter validation and parsing
-- Symbol search and resolution steps
-- File processing and URI conversion
-- Result counts and performance metrics
-
-**Example Debug Output:**
-```json
-{"time":"2025-07-06T14:40:31.400726-07:00","level":"DEBUG","source":{"function":"github.com/averycrespi/gopls-mcp/internal/server.NewGoplsServer","file":"/Users/avery/Workspace/gopls-mcp/internal/server/server.go","line":27},"msg":"Creating new Gopls MCP server","project_name":"gopls-mcp","project_version":"0.0.1","gopls_path":"gopls","workspace_root":"/Users/avery/Workspace/gopls-mcp"}
-
-{"time":"2025-07-06T14:40:31.402073-07:00","level":"DEBUG","source":{"function":"github.com/averycrespi/gopls-mcp/internal/transport.(*JsonRpcTransport).SendRequest","file":"/Users/avery/Workspace/gopls-mcp/internal/transport/transport.go","line":153},"msg":"Sending JSON-RPC request","request_id":1,"method":"initialize"}
-```
-
-#### Troubleshooting
-
-For troubleshooting issues:
-
-1. **Connection problems**: Use `--log-level debug` to see JSON-RPC communication
-2. **Tool failures**: Debug logs show parameter parsing and LSP interaction
-3. **Performance issues**: Check request timing and symbol counts in debug output
-4. **Gopls issues**: Monitor gopls process startup and LSP method calls
 
 ### MCP Client Integration
 
@@ -219,45 +173,9 @@ Find all references to a symbol by its precise anchor location in the Go workspa
 
 **Note:** This tool requires a precise anchor from the output of `find_symbol_definitions_by_name` or `list_symbols_in_file` tools to identify the exact symbol instance.
 
-## Architecture
-
-```
-┌─────────────────┐    ┌──────────────┐    ┌─────────────┐
-│   MCP Client    │◄──►│   gopls-mcp  │◄──►│    gopls    │
-│   (Claude, etc) │    │   (Server)   │    │ (Language   │
-└─────────────────┘    └──────────────┘    │  Server)    │
-                                           └─────────────┘
-```
-
-The server acts as a bridge:
-1. GoplsServer.Serve() receives MCP tool calls from clients
-2. Tools translate requests to LSP operations via GoplsClient interface
-3. GoplsClient communicates with gopls via JsonRpcTransport
-4. Returns formatted responses to the MCP client
-
-### Design Principles
-- **Interface-based design**: Clean separation of concerns through well-defined interfaces
-- **Value types for immutability**: Config is passed as value type to prevent modification
-- **Direct tool injection**: Tools receive client reference at creation time for simplicity
-
 ## Development
 
-### Project Structure
-```
-gopls-mcp/
-├── cmd/gopls-mcp/         # Main application entry point
-├── internal/
-│   ├── server/            # MCP server implementation (GoplsServer)
-│   ├── client/            # LSP client implementation (GoplsClient)
-│   ├── transport/         # JSON-RPC transport layer (JsonRpcTransport)
-│   ├── tools/             # Individual MCP tool implementations
-│   └── results/           # JSON response types and formatting
-├── pkg/
-│   ├── types/             # Shared type definitions (client, server, config, transport)
-│   └── project/           # Project metadata
-├── testdata/              # Test fixtures for integration tests
-└── README.md
-```
+For detailed information about the architecture, design patterns, and development guidelines, please see [DEVELOPERS.md](DEVELOPERS.md).
 
 ## Related Projects
 
