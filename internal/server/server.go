@@ -60,9 +60,4 @@ func (s *GoplsServer) registerTools() {
 	completionTool := tools.NewGetCompletionTool(s.goplsClient, s.config)
 	s.mcpServer.AddTool(completionTool.GetTool(), completionTool.Handle)
 
-	formatTool := tools.NewFormatCodeTool(s.goplsClient, s.config)
-	s.mcpServer.AddTool(formatTool.GetTool(), formatTool.Handle)
-
-	renameTool := tools.NewRenameSymbolTool(s.goplsClient, s.config)
-	s.mcpServer.AddTool(renameTool.GetTool(), renameTool.Handle)
 }
