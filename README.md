@@ -96,17 +96,20 @@ Find all references to a symbol.
 - `references`: Array of locations where the symbol is referenced
 
 ### list_symbols_in_file
-Get all symbols in a Go file with hierarchical structure support.
+List all symbols in a Go file, returning a hierarchical structure of symbols.
 
 **Parameters:**
 - `file_path` (string): Path to the Go file
 
-**Response:** JSON array of file symbol objects, each containing:
-- `name`: Symbol name
-- `kind`: Symbol type (function, struct, method, etc.)
-- `location`: File path, line, and character position
-- `hover_info`: Hover information from the language server (if available)
-- `children`: Array of child symbols (for hierarchical symbols like structs with fields, methods, etc.)
+**Response:** JSON object containing:
+- `file_path`: The path to the analyzed file
+- `message`: Summary message about the results (e.g., "Found 8 symbols in file." or "No symbols found in file.")
+- `results`: Array of file symbol objects (may be empty), each containing:
+  - `name`: Symbol name
+  - `kind`: Symbol type (function, struct, method, etc.)
+  - `location`: File path, line, and character position
+  - `hover_info`: Hover information from the language server (if available)
+  - `children`: Array of child symbols (for hierarchical symbols like structs with fields, methods, etc.)
 
 The tool provides full hierarchical support for Go symbols. For example:
 - Struct symbols include their fields and methods as children

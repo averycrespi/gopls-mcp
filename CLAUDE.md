@@ -53,7 +53,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 **Tool Registration**: Each MCP tool is implemented in its own file in `internal/tools/`:
 - `symbol_definition.go` - `symbol_definition` → LSP WorkspaceSymbol + Definition requests
 - `symbol_references.go` - `symbol_references` → LSP WorkspaceSymbol + References requests (renamed from find_references)
-- `file_symbols.go` - `list_symbols_in_file` → LSP DocumentSymbol requests with hierarchical support
+- `list_symbols_in_file.go` - `list_symbols_in_file` → LSP DocumentSymbol requests with hierarchical support
 - `utils.go` - Shared utilities for path handling and position parsing
 
 **JSON Response Structure**: Structured output types in `internal/results/`:
@@ -61,7 +61,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - `symbol_location.go` - Location information with file paths and positions
 - `symbol_definition.go` - Definition result type with symbol information
 - `symbol_reference.go` - Reference result type with symbol and reference locations
-- `file_symbol.go` - File symbol result type with hierarchical structure
+- `list_symbols_in_file.go` - ListSymbolsInFileToolResult with file path, message, and hierarchical FileSymbolResult array
 
 **Interface Design**: The codebase uses clean interfaces to separate concerns:
 - `types.Client` - Defines LSP client operations including Start/Stop (implemented by GoplsClient)
@@ -79,6 +79,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - Type-safe SymbolKind enums (function, struct, method, etc.)
 - Rich metadata including hover info from the language server
 - Relative file paths from workspace root
+- Descriptive messages and metadata (e.g., file paths, symbol counts)
 
 **Hierarchical Symbol Support**: The `list_symbols_in_file` tool provides full hierarchical support for Go symbols:
 - Enabled by declaring `hierarchicalDocumentSymbolSupport: true` in the LSP client capabilities

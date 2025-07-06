@@ -47,20 +47,23 @@ func (t *ListSymbolsInFileTool) Handle(ctx context.Context, req mcp.CallToolRequ
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to get document symbols: %v", err)), nil
 	}
 
-	// Convert DocumentSymbol to FileSymbolResult
-	var symbolResults []results.FileSymbolResult
+	toolResult := results.ListSymbolsInFileToolResult{
+		FilePath: filePath,
+		Results:  make([]results.FileSymbolResult, 0),
+	}
 	for _, docSym := range documentSymbols {
 		symbolResult := t.convertDocumentSymbol(ctx, uri, docSym, filePath)
-		symbolResults = append(symbolResults, symbolResult)
+		toolResult.Results = append(toolResult.Results, symbolResult)
+	}
+	if len(toolResult.Results) == 0 {
+		toolResult.Message = "No symbols found in file. This could mean that the file is missing, empty, or not a Go file."
+	} else {
+		toolResult.Message = fmt.Sprintf("Found %d symbols in file.", len(toolResult.Results))
 	}
 
-	if len(symbolResults) == 0 {
-		return mcp.NewToolResultText(fmt.Sprintf("No symbols found in file: %s", filePath)), nil
-	}
-
-	jsonBytes, err := json.MarshalIndent(symbolResults, "", "  ")
+	jsonBytes, err := json.MarshalIndent(toolResult, "", "  ")
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal JSON: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal tool result JSON: %v", err)), nil
 	}
 
 	return mcp.NewToolResultText(string(jsonBytes)), nil

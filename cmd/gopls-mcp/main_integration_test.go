@@ -201,17 +201,19 @@ func validateSymbolReferenceResult(t *testing.T, jsonContent string, expectedSym
 	assert.NotNil(t, firstSymbol.References, "References should not be nil")
 }
 
-// validateFileSymbolResult validates the structure of a file symbol result
-func validateFileSymbolResult(t *testing.T, jsonContent string) {
-	var symbols []results.FileSymbolResult
-	err := json.Unmarshal([]byte(jsonContent), &symbols)
-	assert.NoError(t, err, "Should be able to unmarshal file symbol results")
+// validateListSymbolsInFileToolResult validates the structure of a list symbols in file result
+func validateListSymbolsInFileToolResult(t *testing.T, jsonContent string) {
+	var result results.ListSymbolsInFileToolResult
+	err := json.Unmarshal([]byte(jsonContent), &result)
+	assert.NoError(t, err, "Should be able to unmarshal list symbols in file tool result")
 
 	// Validate basic structure
-	assert.Greater(t, len(symbols), 0, "Should have found at least one symbol")
+	assert.NotEmpty(t, result.FilePath, "File path should not be empty")
+	assert.NotEmpty(t, result.Message, "Message should not be empty")
+	assert.Greater(t, len(result.Results), 0, "Should have found at least one symbol")
 
 	// Validate first symbol
-	firstSymbol := symbols[0]
+	firstSymbol := result.Results[0]
 	assert.NotEmpty(t, firstSymbol.Name, "Symbol name should not be empty")
 	assert.NotEmpty(t, firstSymbol.Kind, "Symbol kind should not be empty")
 	assert.NotEmpty(t, firstSymbol.Location.File, "Symbol file should not be empty")
@@ -219,7 +221,7 @@ func validateFileSymbolResult(t *testing.T, jsonContent string) {
 
 	// Look for a struct symbol to verify hierarchical structure
 	var structSymbol *results.FileSymbolResult
-	for _, symbol := range symbols {
+	for _, symbol := range result.Results {
 		if symbol.Kind == "struct" {
 			structSymbol = &symbol
 			break
@@ -296,7 +298,7 @@ func TestMCPServerIntegration(t *testing.T) {
 		expectedTools := []string{
 			"symbol_definition",
 			"symbol_references",
-			"file_symbols",
+			"list_symbols_in_file",
 		}
 
 		assert.Len(t, tools, len(expectedTools), "Should have exactly %d tools", len(expectedTools))
@@ -390,7 +392,7 @@ func TestMCPServerIntegration(t *testing.T) {
 			ID:      6,
 			Method:  "tools/call",
 			Params: map[string]any{
-				"name": "file_symbols",
+				"name": "list_symbols_in_file",
 				"arguments": map[string]any{
 					"file_path": calcFile,
 				},
@@ -407,7 +409,7 @@ func TestMCPServerIntegration(t *testing.T) {
 
 		// Parse and validate the JSON response structure
 		contentStr := parseToolResult(t, result)
-		validateFileSymbolResult(t, contentStr)
+		validateListSymbolsInFileToolResult(t, contentStr)
 
 		t.Logf("File symbols content: %v", contentStr)
 	})
