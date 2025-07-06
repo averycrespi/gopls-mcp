@@ -51,7 +51,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 ### Key Design Patterns
 
 **Tool Registration**: Each MCP tool is implemented in its own file in `internal/tools/`:
-- `symbol_definition.go` - `find_symbol_definitions_by_name` → LSP WorkspaceSymbol + Definition requests
+- `find_symbol_definitions_by_name.go` - `find_symbol_definitions_by_name` → LSP WorkspaceSymbol + Definition requests
 - `symbol_references.go` - `symbol_references` → LSP WorkspaceSymbol + References requests (renamed from find_references)
 - `list_symbols_in_file.go` - `list_symbols_in_file` → LSP DocumentSymbol requests with hierarchical support
 - `utils.go` - Shared utilities for path handling and position parsing
@@ -59,9 +59,9 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 **JSON Response Structure**: Structured output types in `internal/results/`:
 - `symbol_kind.go` - SymbolKind enum with LSP mapping (file, function, struct, etc.)
 - `symbol_location.go` - Location information with file paths and positions
-- `find_symbol_definitions_by_name.go` - FindSymbolDefinitionsByNameToolResult with searched symbol name, message, and SymbolDefinitionResult array
+- `find_symbol_definitions_by_name.go` - FindSymbolDefinitionsByNameToolResult with searched symbol name, message, and SymbolDefinition array
 - `symbol_reference.go` - Reference result type with symbol and reference locations
-- `list_symbols_in_file.go` - ListSymbolsInFileToolResult with file path, message, and hierarchical FileSymbolResult array
+- `list_symbols_in_file.go` - ListSymbolsInFileToolResult with file path, message, and hierarchical FileSymbol array
 
 **Interface Design**: The codebase uses clean interfaces to separate concerns:
 - `types.Client` - Defines LSP client operations including Start/Stop (implemented by GoplsClient)

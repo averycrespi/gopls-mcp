@@ -173,12 +173,12 @@ func validateFindSymbolDefinitionsByNameResult(t *testing.T, jsonContent string,
 	assert.NoError(t, err, "Should be able to unmarshal find symbol definitions by name tool result")
 
 	// Validate basic structure
-	assert.Equal(t, expectedSymbol, result.Name, "Searched symbol name should match")
+	assert.Equal(t, expectedSymbol, result.SymbolName, "Searched symbol name should match")
 	assert.NotEmpty(t, result.Message, "Message should not be empty")
-	assert.Greater(t, len(result.Results), 0, "Should have found at least one symbol")
+	assert.Greater(t, len(result.Definitions), 0, "Should have found at least one symbol")
 
 	// Validate first symbol
-	firstSymbol := result.Results[0]
+	firstSymbol := result.Definitions[0]
 	assert.NotEmpty(t, firstSymbol.Name, "Symbol name should not be empty")
 	assert.NotEmpty(t, firstSymbol.Kind, "Symbol kind should not be empty")
 	assert.NotEmpty(t, firstSymbol.Location.File, "Symbol file should not be empty")
@@ -212,18 +212,18 @@ func validateListSymbolsInFileToolResult(t *testing.T, jsonContent string) {
 	// Validate basic structure
 	assert.NotEmpty(t, result.FilePath, "File path should not be empty")
 	assert.NotEmpty(t, result.Message, "Message should not be empty")
-	assert.Greater(t, len(result.Results), 0, "Should have found at least one symbol")
+	assert.Greater(t, len(result.FileSymbols), 0, "Should have found at least one symbol")
 
 	// Validate first symbol
-	firstSymbol := result.Results[0]
+	firstSymbol := result.FileSymbols[0]
 	assert.NotEmpty(t, firstSymbol.Name, "Symbol name should not be empty")
 	assert.NotEmpty(t, firstSymbol.Kind, "Symbol kind should not be empty")
 	assert.NotEmpty(t, firstSymbol.Location.File, "Symbol file should not be empty")
 	assert.Greater(t, firstSymbol.Location.Line, 0, "Symbol line should be positive")
 
 	// Look for a struct symbol to verify hierarchical structure
-	var structSymbol *results.FileSymbolResult
-	for _, symbol := range result.Results {
+	var structSymbol *results.FileSymbol
+	for _, symbol := range result.FileSymbols {
 		if symbol.Kind == "struct" {
 			structSymbol = &symbol
 			break

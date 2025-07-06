@@ -71,15 +71,15 @@ Example configuration:
 All tools return structured JSON responses for easy programmatic consumption.
 
 ### find_symbol_definitions_by_name
-Find the definition of a symbol by name in Go code using fuzzy search.
+Find the definitions of a symbol by name in the Go workspace, returning a list of symbol definitions with fuzzy search.
 
 **Parameters:**
-- `symbol_name` (string): Symbol name to find the definition for
+- `symbol_name` (string): Symbol name to find the definitions for, with fuzzy matching
 
 **Response:** JSON object containing:
-- `name`: The searched symbol name
-- `message`: Summary message about the results (e.g., "Found 3 symbol definitions." or "No symbol definitions found.")
-- `results`: Array of symbol definition objects (may be empty), each containing:
+- `symbol_name`: The searched symbol name
+- `message`: Summary message about the results (e.g., "Found 3 symbol definitions in the Go workspace." or "No symbol definitions found in the Go workspace.")
+- `definitions`: Array of symbol definition objects (may be empty), each containing:
   - `name`: Symbol name
   - `kind`: Symbol type (function, struct, method, etc.)
   - `location`: File path, line, and character position
@@ -99,7 +99,7 @@ Find all references to a symbol.
 - `references`: Array of locations where the symbol is referenced
 
 ### list_symbols_in_file
-List all symbols in a Go file, returning a hierarchical structure of symbols.
+List all symbols in a Go file, returning a list of symbols with hierarchical structure.
 
 **Parameters:**
 - `file_path` (string): Path to the Go file
@@ -107,7 +107,7 @@ List all symbols in a Go file, returning a hierarchical structure of symbols.
 **Response:** JSON object containing:
 - `file_path`: The path to the analyzed file
 - `message`: Summary message about the results (e.g., "Found 8 symbols in file." or "No symbols found in file.")
-- `results`: Array of file symbol objects (may be empty), each containing:
+- `file_symbols`: Array of file symbol objects (may be empty), each containing:
   - `name`: Symbol name
   - `kind`: Symbol type (function, struct, method, etc.)
   - `location`: File path, line, and character position

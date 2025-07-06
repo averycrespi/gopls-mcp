@@ -28,7 +28,7 @@ func NewListSymbolsInFileTool(client types.Client, config types.Config) *ListSym
 // GetTool returns the MCP tool definition
 func (t *ListSymbolsInFileTool) GetTool() mcp.Tool {
 	tool := mcp.NewTool("list_symbols_in_file",
-		mcp.WithDescription("List all symbols in a Go file, returning a hierarchical structure of symbols"),
+		mcp.WithDescription("List all symbols in a Go file, returning a list of symbols with hierarchical structure"),
 		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
 	)
 	return tool
@@ -44,21 +44,24 @@ func (t *ListSymbolsInFileTool) Handle(ctx context.Context, req mcp.CallToolRequ
 	uri := PathToUri(filePath, t.config.WorkspaceRoot)
 	documentSymbols, err := t.client.GetDocumentSymbols(ctx, uri)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to get document symbols: %v", err)), nil
+		return mcp.NewToolResultError(
+			fmt.Sprintf("Failed to get document symbols for file: %s: %v", filePath, err),
+		), nil
 	}
 
 	toolResult := results.ListSymbolsInFileToolResult{
-		FilePath: filePath,
-		Results:  make([]results.FileSymbolResult, 0),
+		FilePath:    filePath,
+		FileSymbols: make([]results.FileSymbol, 0),
 	}
 	for _, docSym := range documentSymbols {
 		symbolResult := t.convertDocumentSymbol(ctx, uri, docSym, filePath)
-		toolResult.Results = append(toolResult.Results, symbolResult)
+		toolResult.FileSymbols = append(toolResult.FileSymbols, symbolResult)
 	}
-	if len(toolResult.Results) == 0 {
-		toolResult.Message = "No symbols found in file. This could mean that the file is missing, empty, or not a Go file."
+	if len(toolResult.FileSymbols) == 0 {
+		toolResult.Message = "No symbols found in file. " +
+			"This could mean that the file is missing, empty, or not a Go file."
 	} else {
-		toolResult.Message = fmt.Sprintf("Found %d symbols in file.", len(toolResult.Results))
+		toolResult.Message = fmt.Sprintf("Found %d symbols in file.", len(toolResult.FileSymbols))
 	}
 
 	jsonBytes, err := json.MarshalIndent(toolResult, "", "  ")
@@ -69,9 +72,9 @@ func (t *ListSymbolsInFileTool) Handle(ctx context.Context, req mcp.CallToolRequ
 	return mcp.NewToolResultText(string(jsonBytes)), nil
 }
 
-// convertDocumentSymbol converts a DocumentSymbol to FileSymbolResult recursively
-func (t *ListSymbolsInFileTool) convertDocumentSymbol(ctx context.Context, uri string, docSym types.DocumentSymbol, filePath string) results.FileSymbolResult {
-	result := results.FileSymbolResult{
+// convertDocumentSymbol converts a DocumentSymbol to FileSymbol recursively
+func (t *ListSymbolsInFileTool) convertDocumentSymbol(ctx context.Context, uri string, docSym types.DocumentSymbol, filePath string) results.FileSymbol {
+	result := results.FileSymbol{
 		Name: docSym.Name,
 		Kind: results.NewSymbolKind(docSym.Kind),
 		Location: results.SymbolLocation{
@@ -88,7 +91,7 @@ func (t *ListSymbolsInFileTool) convertDocumentSymbol(ctx context.Context, uri s
 
 	// Convert children recursively
 	if len(docSym.Children) > 0 {
-		result.Children = make([]results.FileSymbolResult, len(docSym.Children))
+		result.Children = make([]results.FileSymbol, len(docSym.Children))
 		for i, child := range docSym.Children {
 			result.Children[i] = t.convertDocumentSymbol(ctx, uri, child, filePath)
 		}
