@@ -65,7 +65,20 @@ type TextEdit struct {
 	NewText string `json:"newText"`
 }
 
+// TextDocumentEdit represents a text document edit
+type TextDocumentEdit struct {
+	TextDocument TextDocumentIdentifier `json:"textDocument"`
+	Edits        []TextEdit             `json:"edits"`
+}
+
+// TextDocumentIdentifier represents a text document identifier
+type TextDocumentIdentifier struct {
+	URI     string `json:"uri"`
+	Version int    `json:"version"`
+}
+
 // WorkspaceEdit represents changes to many resources managed in the workspace
 type WorkspaceEdit struct {
-	Changes map[string][]TextEdit `json:"changes,omitempty"`
+	Changes         map[string][]TextEdit `json:"changes,omitempty"`
+	DocumentChanges []TextDocumentEdit    `json:"documentChanges,omitempty"`
 }

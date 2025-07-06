@@ -97,6 +97,9 @@ func (c *GoplsClient) initialize(rootURI string) error {
 				"documentSymbol": map[string]any{
 					"hierarchicalDocumentSymbolSupport": true,
 				},
+				"rename": map[string]any{
+					"prepareSupport": true,
+				},
 			},
 		},
 	}
@@ -387,10 +390,24 @@ func (c *GoplsClient) RenameSymbol(ctx context.Context, uri string, position typ
 	}
 
 	editCount := 0
-	for _, edits := range workspaceEdit.Changes {
-		editCount += len(edits)
+	fileCount := 0
+
+	// Count edits from both formats
+	if workspaceEdit.Changes != nil {
+		for _, edits := range workspaceEdit.Changes {
+			editCount += len(edits)
+		}
+		fileCount = len(workspaceEdit.Changes)
 	}
-	slog.Debug("Symbol renamed", "uri", uri, "file_count", len(workspaceEdit.Changes), "edit_count", editCount)
+
+	if workspaceEdit.DocumentChanges != nil {
+		for _, docEdit := range workspaceEdit.DocumentChanges {
+			editCount += len(docEdit.Edits)
+		}
+		fileCount = len(workspaceEdit.DocumentChanges)
+	}
+
+	slog.Debug("Symbol renamed", "uri", uri, "file_count", fileCount, "edit_count", editCount)
 
 	return &workspaceEdit, nil
 }

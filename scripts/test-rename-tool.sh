@@ -131,39 +131,5 @@ done
 
 echo ""
 
-# Show what changed (if anything)
-echo "Checking for changes in calculator.go..."
-echo "----------------------------------------"
-
-# Check if Calculator was renamed to MyCalculator
-if grep -q "type MyCalculator" "$TESTDATA_DIR/calculator.go" 2>/dev/null; then
-    echo "✓ Rename successful: Calculator → MyCalculator"
-    echo ""
-    echo "Modified Calculator struct (after rename):"
-    echo "------------------------------------------"
-    grep -n "type MyCalculator" "$TESTDATA_DIR/calculator.go"
-    echo ""
-
-    # Show additional changes
-    echo "Other potential changes:"
-    echo "-----------------------"
-    if grep -q "NewMyCalculator" "$TESTDATA_DIR/calculator.go" 2>/dev/null; then
-        echo "✓ Constructor function also renamed: NewCalculator → NewMyCalculator"
-    fi
-
-    # Count total occurrences of MyCalculator
-    CALC_COUNT=$(grep -o "MyCalculator" "$TESTDATA_DIR/calculator.go" | wc -l)
-    echo "✓ Found $CALC_COUNT occurrences of 'MyCalculator' in calculator.go"
-
-elif grep -q "type Calculator" "$TESTDATA_DIR/calculator.go" 2>/dev/null; then
-    echo "ℹ No changes detected: Calculator struct unchanged"
-    echo "This could mean:"
-    echo "  - The rename was not applicable (symbol already has that name)"
-    echo "  - The rename failed due to validation errors"
-    echo "  - The anchor position was invalid"
-else
-    echo "⚠ Unexpected state: Neither 'Calculator' nor 'MyCalculator' found"
-fi
-
 echo ""
 echo "Test completed. Backup will be restored automatically."

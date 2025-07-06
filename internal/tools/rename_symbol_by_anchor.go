@@ -119,11 +119,20 @@ func (t *RenameSymbolByAnchorTool) Handle(ctx context.Context, req mcp.CallToolR
 		), nil
 	}
 
+	// Calculate total affected files from both formats
+	affectedFiles := 0
+	if workspaceEdit.Changes != nil {
+		affectedFiles += len(workspaceEdit.Changes)
+	}
+	if workspaceEdit.DocumentChanges != nil {
+		affectedFiles += len(workspaceEdit.DocumentChanges)
+	}
+
 	slog.Debug("Symbol renamed",
 		"tool", "rename_symbol_by_anchor",
 		"symbol_anchor", anchorStr,
 		"new_name", newName,
-		"affected_files", len(workspaceEdit.Changes))
+		"affected_files", affectedFiles)
 
 	toolResult := results.RenameSymbolByAnchorToolResult{
 		Arguments: results.RenameSymbolByAnchorToolArgs{
@@ -133,6 +142,7 @@ func (t *RenameSymbolByAnchorTool) Handle(ctx context.Context, req mcp.CallToolR
 		FileEdits: make([]results.FileEdit, 0),
 	}
 
+	// Process Changes format (legacy)
 	for fileURI, textEdits := range workspaceEdit.Changes {
 		filePath := GetRelativePath(UriToPath(fileURI), t.config.WorkspaceRoot)
 		fileEdit := results.FileEdit{
@@ -141,6 +151,29 @@ func (t *RenameSymbolByAnchorTool) Handle(ctx context.Context, req mcp.CallToolR
 		}
 
 		for _, textEdit := range textEdits {
+			edit := results.Edit{
+				StartLine:      textEdit.Range.Start.Line + 1,      // Convert to display coordinates
+				StartCharacter: textEdit.Range.Start.Character + 1, // Convert to display coordinates
+				EndLine:        textEdit.Range.End.Line + 1,        // Convert to display coordinates
+				EndCharacter:   textEdit.Range.End.Character + 1,   // Convert to display coordinates
+				OldText:        prepareResult.Placeholder,          // Use placeholder as old text if available
+				NewText:        textEdit.NewText,
+			}
+			fileEdit.Edits = append(fileEdit.Edits, edit)
+		}
+
+		toolResult.FileEdits = append(toolResult.FileEdits, fileEdit)
+	}
+
+	// Process DocumentChanges format (modern)
+	for _, docEdit := range workspaceEdit.DocumentChanges {
+		filePath := GetRelativePath(UriToPath(docEdit.TextDocument.URI), t.config.WorkspaceRoot)
+		fileEdit := results.FileEdit{
+			File:  filePath,
+			Edits: make([]results.Edit, 0, len(docEdit.Edits)),
+		}
+
+		for _, textEdit := range docEdit.Edits {
 			edit := results.Edit{
 				StartLine:      textEdit.Range.Start.Line + 1,      // Convert to display coordinates
 				StartCharacter: textEdit.Range.Start.Character + 1, // Convert to display coordinates
