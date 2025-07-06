@@ -65,7 +65,7 @@ func (t *SymbolDefinitionTool) Handle(ctx context.Context, req mcp.CallToolReque
 	for _, sym := range symbols {
 		entry := SymbolDefinitionResultEntry{
 			Name: sym.Name,
-			Kind: symbolKindToString(sym.Kind),
+			Kind: symbolKindToEnum(sym.Kind),
 			Location: SymbolLocation{
 				File:      getRelativePath(uriToPath(sym.Location.URI), t.config.WorkspaceRoot),
 				Line:      sym.Location.Range.Start.Line + 1,
@@ -99,7 +99,7 @@ func (t *SymbolDefinitionTool) Handle(ctx context.Context, req mcp.CallToolReque
 
 				// Try to get source context for definition
 				if contextStr, contextErr := getSymbolContext(def.URI, def.Range.Start.Line, def.Range.Start.Character, 3); contextErr == nil {
-					defInfo.Source = parseSourceContext(contextStr, def.Range.Start.Line)
+					defInfo.Source = NewSourceContext(contextStr, def.Range.Start.Line)
 				}
 
 				entry.Definitions = append(entry.Definitions, defInfo)

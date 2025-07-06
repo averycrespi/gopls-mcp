@@ -26,13 +26,12 @@ func NewSymbolSearchTool(client types.Client, config types.Config) *SymbolSearch
 
 // GetTool returns the MCP tool definition
 func (t *SymbolSearchTool) GetTool() mcp.Tool {
-	tool := mcp.NewTool(ToolSymbolSearch,
+	tool := mcp.NewTool("symbol_search",
 		mcp.WithDescription("Search for symbols in Go code by name"),
 		mcp.WithString("symbol", mcp.Required(), mcp.Description("Symbol name to search for")),
 	)
 	return tool
 }
-
 
 // Handle processes the tool request
 func (t *SymbolSearchTool) Handle(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -56,7 +55,6 @@ func (t *SymbolSearchTool) Handle(ctx context.Context, req mcp.CallToolRequest) 
 		return mcp.NewToolResultText(string(jsonBytes)), nil
 	}
 
-	// Build JSON result
 	result := SymbolSearchResult{
 		Query:   symbol,
 		Count:   len(symbols),
@@ -66,7 +64,7 @@ func (t *SymbolSearchTool) Handle(ctx context.Context, req mcp.CallToolRequest) 
 	for _, sym := range symbols {
 		entry := SymbolSearchResultEntry{
 			Name: sym.Name,
-			Kind: symbolKindToString(sym.Kind),
+			Kind: symbolKindToEnum(sym.Kind),
 			Location: SymbolLocation{
 				File:      getRelativePath(uriToPath(sym.Location.URI), t.config.WorkspaceRoot),
 				Line:      sym.Location.Range.Start.Line + 1,
@@ -81,7 +79,7 @@ func (t *SymbolSearchTool) Handle(ctx context.Context, req mcp.CallToolRequest) 
 
 		// Try to get source context
 		if contextStr, err := getSymbolContext(sym.Location.URI, sym.Location.Range.Start.Line, sym.Location.Range.Start.Character, 2); err == nil {
-			entry.Source = parseSourceContext(contextStr, sym.Location.Range.Start.Line)
+			entry.Source = NewSourceContext(contextStr, sym.Location.Range.Start.Line)
 		}
 
 		result.Symbols = append(result.Symbols, entry)

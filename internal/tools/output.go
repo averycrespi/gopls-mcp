@@ -5,6 +5,39 @@ import (
 	"strings"
 )
 
+// SymbolKind represents the type of a symbol as an enum
+type SymbolKind string
+
+const (
+	SymbolKindFile          SymbolKind = "file"
+	SymbolKindModule        SymbolKind = "module"
+	SymbolKindNamespace     SymbolKind = "namespace"
+	SymbolKindPackage       SymbolKind = "package"
+	SymbolKindClass         SymbolKind = "class"
+	SymbolKindMethod        SymbolKind = "method"
+	SymbolKindProperty      SymbolKind = "property"
+	SymbolKindField         SymbolKind = "field"
+	SymbolKindConstructor   SymbolKind = "constructor"
+	SymbolKindEnum          SymbolKind = "enum"
+	SymbolKindInterface     SymbolKind = "interface"
+	SymbolKindFunction      SymbolKind = "function"
+	SymbolKindVariable      SymbolKind = "variable"
+	SymbolKindConstant      SymbolKind = "constant"
+	SymbolKindString        SymbolKind = "string"
+	SymbolKindNumber        SymbolKind = "number"
+	SymbolKindBoolean       SymbolKind = "boolean"
+	SymbolKindArray         SymbolKind = "array"
+	SymbolKindObject        SymbolKind = "object"
+	SymbolKindKey           SymbolKind = "key"
+	SymbolKindNull          SymbolKind = "null"
+	SymbolKindEnumMember    SymbolKind = "enum_member"
+	SymbolKindStruct        SymbolKind = "struct"
+	SymbolKindEvent         SymbolKind = "event"
+	SymbolKindOperator      SymbolKind = "operator"
+	SymbolKindTypeParameter SymbolKind = "type_parameter"
+	SymbolKindUnknown       SymbolKind = "unknown"
+)
+
 // SymbolSearchResult represents the JSON structure for symbol search results
 type SymbolSearchResult struct {
 	Query   string                    `json:"query"`
@@ -15,7 +48,7 @@ type SymbolSearchResult struct {
 // SymbolSearchResultEntry represents a single symbol in the search results
 type SymbolSearchResultEntry struct {
 	Name          string         `json:"name"`
-	Kind          string         `json:"kind"`
+	Kind          SymbolKind     `json:"kind"`
 	Location      SymbolLocation `json:"location"`
 	Documentation string         `json:"documentation,omitempty"`
 	Source        *SourceContext `json:"source,omitempty"`
@@ -50,7 +83,7 @@ type SymbolDefinitionResult struct {
 // SymbolDefinitionResultEntry represents a single symbol definition in the results
 type SymbolDefinitionResultEntry struct {
 	Name        string                 `json:"name"`
-	Kind        string                 `json:"kind"`
+	Kind        SymbolKind             `json:"kind"`
 	Location    SymbolLocation         `json:"location"`
 	Definitions []SymbolDefinitionInfo `json:"definitions"`
 }
@@ -62,8 +95,8 @@ type SymbolDefinitionInfo struct {
 	Source        *SourceContext `json:"source,omitempty"`
 }
 
-// parseSourceContext parses a source context string into structured SourceContext
-func parseSourceContext(contextStr string, highlightLine int) *SourceContext {
+// NewSourceContext parses a source context string into structured SourceContext
+func NewSourceContext(contextStr string, highlightLine int) *SourceContext {
 	lines := strings.Split(strings.TrimSpace(contextStr), "\n")
 	sourceLines := make([]SourceLine, 0, len(lines))
 

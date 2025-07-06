@@ -17,97 +17,96 @@ const (
 	ToolFindReferences   = "find_references"
 	ToolHoverInfo        = "hover_info"
 	ToolGetCompletion    = "get_completion"
-	ToolSymbolSearch     = "symbol_search"
 )
 
-// LSP Symbol Kinds - based on Language Server Protocol specification
+// LSP symbol kinds, based on protocol specification
 // See: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#symbolKind
 const (
-	SymbolKindFile          = 1
-	SymbolKindModule        = 2
-	SymbolKindNamespace     = 3
-	SymbolKindPackage       = 4
-	SymbolKindClass         = 5
-	SymbolKindMethod        = 6
-	SymbolKindProperty      = 7
-	SymbolKindField         = 8
-	SymbolKindConstructor   = 9
-	SymbolKindEnum          = 10
-	SymbolKindInterface     = 11
-	SymbolKindFunction      = 12
-	SymbolKindVariable      = 13
-	SymbolKindConstant      = 14
-	SymbolKindString        = 15
-	SymbolKindNumber        = 16
-	SymbolKindBoolean       = 17
-	SymbolKindArray         = 18
-	SymbolKindObject        = 19
-	SymbolKindKey           = 20
-	SymbolKindNull          = 21
-	SymbolKindEnumMember    = 22
-	SymbolKindStruct        = 23
-	SymbolKindEvent         = 24
-	SymbolKindOperator      = 25
-	SymbolKindTypeParameter = 26
+	LSPSymbolKindFile          = 1
+	LSPSymbolKindModule        = 2
+	LSPSymbolKindNamespace     = 3
+	LSPSymbolKindPackage       = 4
+	LSPSymbolKindClass         = 5
+	LSPSymbolKindMethod        = 6
+	LSPSymbolKindProperty      = 7
+	LSPSymbolKindField         = 8
+	LSPSymbolKindConstructor   = 9
+	LSPSymbolKindEnum          = 10
+	LSPSymbolKindInterface     = 11
+	LSPSymbolKindFunction      = 12
+	LSPSymbolKindVariable      = 13
+	LSPSymbolKindConstant      = 14
+	LSPSymbolKindString        = 15
+	LSPSymbolKindNumber        = 16
+	LSPSymbolKindBoolean       = 17
+	LSPSymbolKindArray         = 18
+	LSPSymbolKindObject        = 19
+	LSPSymbolKindKey           = 20
+	LSPSymbolKindNull          = 21
+	LSPSymbolKindEnumMember    = 22
+	LSPSymbolKindStruct        = 23
+	LSPSymbolKindEvent         = 24
+	LSPSymbolKindOperator      = 25
+	LSPSymbolKindTypeParameter = 26
 )
 
-// symbolKindToString converts LSP symbol kind number to readable string
-func symbolKindToString(kind int) string {
+// symbolKindToEnum converts LSP symbol kind number to SymbolKind enum
+func symbolKindToEnum(kind int) SymbolKind {
 	switch kind {
-	case SymbolKindFile:
-		return "file"
-	case SymbolKindModule:
-		return "module"
-	case SymbolKindNamespace:
-		return "namespace"
-	case SymbolKindPackage:
-		return "package"
-	case SymbolKindClass:
-		return "class"
-	case SymbolKindMethod:
-		return "method"
-	case SymbolKindProperty:
-		return "property"
-	case SymbolKindField:
-		return "field"
-	case SymbolKindConstructor:
-		return "constructor"
-	case SymbolKindEnum:
-		return "enum"
-	case SymbolKindInterface:
-		return "interface"
-	case SymbolKindFunction:
-		return "function"
-	case SymbolKindVariable:
-		return "variable"
-	case SymbolKindConstant:
-		return "constant"
-	case SymbolKindString:
-		return "string"
-	case SymbolKindNumber:
-		return "number"
-	case SymbolKindBoolean:
-		return "boolean"
-	case SymbolKindArray:
-		return "array"
-	case SymbolKindObject:
-		return "object"
-	case SymbolKindKey:
-		return "key"
-	case SymbolKindNull:
-		return "null"
-	case SymbolKindEnumMember:
-		return "enum_member"
-	case SymbolKindStruct:
-		return "struct"
-	case SymbolKindEvent:
-		return "event"
-	case SymbolKindOperator:
-		return "operator"
-	case SymbolKindTypeParameter:
-		return "type_parameter"
+	case LSPSymbolKindFile:
+		return SymbolKindFile
+	case LSPSymbolKindModule:
+		return SymbolKindModule
+	case LSPSymbolKindNamespace:
+		return SymbolKindNamespace
+	case LSPSymbolKindPackage:
+		return SymbolKindPackage
+	case LSPSymbolKindClass:
+		return SymbolKindClass
+	case LSPSymbolKindMethod:
+		return SymbolKindMethod
+	case LSPSymbolKindProperty:
+		return SymbolKindProperty
+	case LSPSymbolKindField:
+		return SymbolKindField
+	case LSPSymbolKindConstructor:
+		return SymbolKindConstructor
+	case LSPSymbolKindEnum:
+		return SymbolKindEnum
+	case LSPSymbolKindInterface:
+		return SymbolKindInterface
+	case LSPSymbolKindFunction:
+		return SymbolKindFunction
+	case LSPSymbolKindVariable:
+		return SymbolKindVariable
+	case LSPSymbolKindConstant:
+		return SymbolKindConstant
+	case LSPSymbolKindString:
+		return SymbolKindString
+	case LSPSymbolKindNumber:
+		return SymbolKindNumber
+	case LSPSymbolKindBoolean:
+		return SymbolKindBoolean
+	case LSPSymbolKindArray:
+		return SymbolKindArray
+	case LSPSymbolKindObject:
+		return SymbolKindObject
+	case LSPSymbolKindKey:
+		return SymbolKindKey
+	case LSPSymbolKindNull:
+		return SymbolKindNull
+	case LSPSymbolKindEnumMember:
+		return SymbolKindEnumMember
+	case LSPSymbolKindStruct:
+		return SymbolKindStruct
+	case LSPSymbolKindEvent:
+		return SymbolKindEvent
+	case LSPSymbolKindOperator:
+		return SymbolKindOperator
+	case LSPSymbolKindTypeParameter:
+		return SymbolKindTypeParameter
 	default:
-		return fmt.Sprintf("unknown(%d)", kind)
+		return SymbolKindUnknown
 	}
 }
 
