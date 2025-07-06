@@ -12,6 +12,11 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
+const (
+	// DefaultFileSymbolsLimit is the default maximum number of file symbols to return
+	DefaultFileSymbolsLimit = 100
+)
+
 // ListSymbolsInFileTool handles list symbols in file requests
 type ListSymbolsInFileTool struct {
 	client types.Client
@@ -31,6 +36,8 @@ func (t *ListSymbolsInFileTool) GetTool() mcp.Tool {
 	tool := mcp.NewTool("list_symbols_in_file",
 		mcp.WithDescription("List all symbols in a Go file, returning a list of symbols with hierarchical structure"),
 		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
+		mcp.WithNumber("limit", mcp.Description(fmt.Sprintf("Maximum number of symbols to return (default: %d)", DefaultFileSymbolsLimit))),
+		mcp.WithBoolean("include_hover", mcp.Description("Whether to include hover information for symbols (default: false)")),
 	)
 	return tool
 }
@@ -43,7 +50,14 @@ func (t *ListSymbolsInFileTool) Handle(ctx context.Context, req mcp.CallToolRequ
 		return mcp.NewToolResultError("file_path parameter is required"), nil
 	}
 
-	slog.Debug("MCP tool called", "tool", "list_symbols_in_file", "file_path", filePath)
+	limit := mcp.ParseInt(req, "limit", DefaultFileSymbolsLimit)
+	if limit <= 0 {
+		limit = DefaultFileSymbolsLimit
+	}
+
+	includeHover := mcp.ParseBoolean(req, "include_hover", false)
+
+	slog.Debug("MCP tool called", "tool", "list_symbols_in_file", "file_path", filePath, "limit", limit, "include_hover", includeHover)
 
 	uri := PathToUri(filePath, t.config.WorkspaceRoot)
 	slog.Debug("Converted file path to URI",
@@ -70,12 +84,19 @@ func (t *ListSymbolsInFileTool) Handle(ctx context.Context, req mcp.CallToolRequ
 
 	toolResult := results.ListSymbolsInFileToolResult{
 		Arguments: results.ListSymbolsInFileToolArgs{
-			FilePath: filePath,
+			FilePath:     filePath,
+			Limit:        limit,
+			IncludeHover: includeHover,
 		},
 		FileSymbols: make([]results.FileSymbol, 0),
 	}
 	for _, docSym := range documentSymbols {
-		symbolResult := t.convertDocumentSymbol(ctx, uri, docSym, filePath)
+		// Apply limit to prevent token overflow
+		if len(toolResult.FileSymbols) >= limit {
+			break
+		}
+
+		symbolResult := t.convertDocumentSymbol(ctx, uri, docSym, filePath, includeHover)
 		toolResult.FileSymbols = append(toolResult.FileSymbols, symbolResult)
 	}
 	if len(toolResult.FileSymbols) == 0 {
@@ -92,7 +113,7 @@ func (t *ListSymbolsInFileTool) Handle(ctx context.Context, req mcp.CallToolRequ
 			"symbol_count", len(toolResult.FileSymbols))
 	}
 
-	jsonBytes, err := json.MarshalIndent(toolResult, "", "  ")
+	jsonBytes, err := json.Marshal(toolResult)
 	if err != nil {
 		slog.Error("Failed to marshal tool result",
 			"tool", "list_symbols_in_file",
@@ -104,13 +125,14 @@ func (t *ListSymbolsInFileTool) Handle(ctx context.Context, req mcp.CallToolRequ
 	slog.Debug("MCP tool completed successfully",
 		"tool", "list_symbols_in_file",
 		"file_path", filePath,
-		"symbol_count", len(toolResult.FileSymbols))
+		"symbol_count", len(toolResult.FileSymbols),
+		"response_size_bytes", len(jsonBytes))
 
 	return mcp.NewToolResultText(string(jsonBytes)), nil
 }
 
 // convertDocumentSymbol converts a DocumentSymbol to FileSymbol recursively
-func (t *ListSymbolsInFileTool) convertDocumentSymbol(ctx context.Context, uri string, docSym types.DocumentSymbol, filePath string) results.FileSymbol {
+func (t *ListSymbolsInFileTool) convertDocumentSymbol(ctx context.Context, uri string, docSym types.DocumentSymbol, filePath string, includeHover bool) results.FileSymbol {
 	location := results.SymbolLocation{
 		File:        GetRelativePath(UriToPath(PathToUri(filePath, t.config.WorkspaceRoot)), t.config.WorkspaceRoot),
 		DisplayLine: docSym.SelectionRange.Start.Line + 1,      // Convert LSP coordinates to display line
@@ -123,16 +145,18 @@ func (t *ListSymbolsInFileTool) convertDocumentSymbol(ctx context.Context, uri s
 		Anchor:   location.ToAnchor(),
 	}
 
-	// Try to enhance with hover information
-	if hoverInfo, hoverErr := t.client.GetHoverInfo(ctx, uri, docSym.SelectionRange.Start); hoverErr == nil && hoverInfo != "" {
-		result.HoverInfo = hoverInfo
+	// Try to enhance with hover information if requested
+	if includeHover {
+		if hoverInfo, hoverErr := t.client.GetHoverInfo(ctx, uri, docSym.SelectionRange.Start); hoverErr == nil && hoverInfo != "" {
+			result.HoverInfo = hoverInfo
+		}
 	}
 
 	// Convert children recursively
 	if len(docSym.Children) > 0 {
 		result.Children = make([]results.FileSymbol, len(docSym.Children))
 		for i, child := range docSym.Children {
-			result.Children[i] = t.convertDocumentSymbol(ctx, uri, child, filePath)
+			result.Children[i] = t.convertDocumentSymbol(ctx, uri, child, filePath, includeHover)
 		}
 	}
 

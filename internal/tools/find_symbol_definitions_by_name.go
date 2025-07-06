@@ -12,6 +12,11 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
+const (
+	// DefaultDefinitionsLimit is the default maximum number of symbol definitions to return
+	DefaultDefinitionsLimit = 50
+)
+
 // FindSymbolDefinitionsByNameTool handles find symbol definitions by name requests
 type FindSymbolDefinitionsByNameTool struct {
 	client types.Client
@@ -31,6 +36,8 @@ func (t *FindSymbolDefinitionsByNameTool) GetTool() mcp.Tool {
 	tool := mcp.NewTool("find_symbol_definitions_by_name",
 		mcp.WithDescription("Find the definitions of a symbol by name in the Go workspace, returning a list of symbol definitions"),
 		mcp.WithString("symbol_name", mcp.Required(), mcp.Description("Symbol name to find the definitions for, with fuzzy matching")),
+		mcp.WithNumber("limit", mcp.Description(fmt.Sprintf("Maximum number of symbol definitions to return (default: %d)", DefaultDefinitionsLimit))),
+		mcp.WithBoolean("include_hover", mcp.Description("Whether to include hover information for symbols (default: false)")),
 	)
 	return tool
 }
@@ -43,7 +50,14 @@ func (t *FindSymbolDefinitionsByNameTool) Handle(ctx context.Context, req mcp.Ca
 		return mcp.NewToolResultError("symbol_name parameter is required"), nil
 	}
 
-	slog.Debug("MCP tool called", "tool", "find_symbol_definitions_by_name", "symbol_name", symbolName)
+	limit := mcp.ParseInt(req, "limit", DefaultDefinitionsLimit)
+	if limit <= 0 {
+		limit = DefaultDefinitionsLimit
+	}
+
+	includeHover := mcp.ParseBoolean(req, "include_hover", false)
+
+	slog.Debug("MCP tool called", "tool", "find_symbol_definitions_by_name", "symbol_name", symbolName, "limit", limit, "include_hover", includeHover)
 
 	symbols, err := t.client.FuzzyFindSymbol(ctx, symbolName)
 	if err != nil {
@@ -63,7 +77,9 @@ func (t *FindSymbolDefinitionsByNameTool) Handle(ctx context.Context, req mcp.Ca
 
 	toolResult := results.FindSymbolDefinitionsByNameToolResult{
 		Arguments: results.FindSymbolDefinitionByNameToolArgs{
-			SymbolName: symbolName,
+			SymbolName:   symbolName,
+			Limit:        limit,
+			IncludeHover: includeHover,
 		},
 		Definitions: make([]results.SymbolDefinition, 0),
 	}
@@ -87,12 +103,24 @@ func (t *FindSymbolDefinitionsByNameTool) Handle(ctx context.Context, req mcp.Ca
 				Anchor:   location.ToAnchor(),
 			}
 
-			// Try to enhance with hover information
-			if hoverInfo, err := t.client.GetHoverInfo(ctx, loc.URI, loc.Range.Start); err == nil && hoverInfo != "" {
-				entry.HoverInfo = hoverInfo
+			// Try to enhance with hover information if requested
+			if includeHover {
+				if hoverInfo, err := t.client.GetHoverInfo(ctx, loc.URI, loc.Range.Start); err == nil && hoverInfo != "" {
+					entry.HoverInfo = hoverInfo
+				}
 			}
 
 			toolResult.Definitions = append(toolResult.Definitions, entry)
+
+			// Apply limit to prevent token overflow
+			if len(toolResult.Definitions) >= limit {
+				break
+			}
+		}
+
+		// Break outer loop if limit reached
+		if len(toolResult.Definitions) >= limit {
+			break
 		}
 	}
 
@@ -110,7 +138,7 @@ func (t *FindSymbolDefinitionsByNameTool) Handle(ctx context.Context, req mcp.Ca
 			"definition_count", len(toolResult.Definitions))
 	}
 
-	jsonBytes, err := json.MarshalIndent(toolResult, "", "  ")
+	jsonBytes, err := json.Marshal(toolResult)
 	if err != nil {
 		slog.Error("Failed to marshal tool result",
 			"tool", "find_symbol_definitions_by_name",
@@ -122,7 +150,8 @@ func (t *FindSymbolDefinitionsByNameTool) Handle(ctx context.Context, req mcp.Ca
 	slog.Debug("MCP tool completed successfully",
 		"tool", "find_symbol_definitions_by_name",
 		"symbol_name", symbolName,
-		"definition_count", len(toolResult.Definitions))
+		"definition_count", len(toolResult.Definitions),
+		"response_size_bytes", len(jsonBytes))
 
 	return mcp.NewToolResultText(string(jsonBytes)), nil
 }

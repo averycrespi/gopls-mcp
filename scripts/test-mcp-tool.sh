@@ -65,10 +65,14 @@ OUTPUT=$(timeout 10s bash -c '{
     tr -d "\n" < ./testdata/mcp_init.json; echo "";
     sleep 1;
     tr -d "\n" < ./testdata/'$TOOL_NAME'.input.json; echo "";
-} | ./bin/gopls-mcp -workspace-root ./testdata/example 2>/dev/null' || true)
+    sleep 2;
+} | ./bin/gopls-mcp --workspace-root ./testdata/example 2>/dev/null' || true)
 
-# Process the output
-echo "$OUTPUT" | while IFS= read -r line; do
+# Process the output - save to temp file to avoid subshell issues
+TEMP_OUTPUT="/tmp/mcp_output_$$"
+echo "$OUTPUT" > "$TEMP_OUTPUT"
+
+while IFS= read -r line; do
     # Skip empty lines
     [[ -z "$line" ]] && continue
     
@@ -93,13 +97,17 @@ echo "$OUTPUT" | while IFS= read -r line; do
             else
                 echo "No JSON content found in response"
             fi
+            echo ""
         fi
         # Skip initialization responses (don't print them)
     else
         # Not JSON, probably an error or log message
         echo "Output: $line"
+        echo ""
     fi
-    echo ""
-done
+done < "$TEMP_OUTPUT"
+
+# Clean up temp file
+rm -f "$TEMP_OUTPUT"
 
 echo "Test completed."

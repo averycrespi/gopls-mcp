@@ -223,7 +223,7 @@ func (t *RenameSymbolByAnchorTool) Handle(ctx context.Context, req mcp.CallToolR
 			"change_count", totalChanges)
 	}
 
-	jsonBytes, err := json.MarshalIndent(toolResult, "", "  ")
+	jsonBytes, err := json.Marshal(toolResult)
 	if err != nil {
 		slog.Error("Failed to marshal tool result",
 			"tool", "rename_symbol_by_anchor",

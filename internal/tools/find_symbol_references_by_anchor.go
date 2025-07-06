@@ -12,6 +12,11 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
+const (
+	// DefaultReferencesLimit is the default maximum number of symbol references to return
+	DefaultReferencesLimit = 100
+)
+
 // FindSymbolReferencesByAnchorTool handles find symbol references by anchor requests
 type FindSymbolReferencesByAnchorTool struct {
 	client types.Client
@@ -35,6 +40,7 @@ func (t *FindSymbolReferencesByAnchorTool) GetTool() mcp.Tool {
 			mcp.Required(),
 			mcp.Description("Symbol anchor, which is included in tool responses. Don't try to parse or generate this yourself."),
 		),
+		mcp.WithNumber("limit", mcp.Description(fmt.Sprintf("Maximum number of symbol references to return (default: %d)", DefaultReferencesLimit))),
 	)
 	return tool
 }
@@ -47,7 +53,12 @@ func (t *FindSymbolReferencesByAnchorTool) Handle(ctx context.Context, req mcp.C
 		return mcp.NewToolResultError("symbol_anchor parameter is required"), nil
 	}
 
-	slog.Debug("MCP tool called", "tool", "find_symbol_references_by_anchor", "symbol_anchor", anchorStr)
+	limit := mcp.ParseInt(req, "limit", DefaultReferencesLimit)
+	if limit <= 0 {
+		limit = DefaultReferencesLimit
+	}
+
+	slog.Debug("MCP tool called", "tool", "find_symbol_references_by_anchor", "symbol_anchor", anchorStr, "limit", limit)
 
 	// Parse and validate the anchor
 	anchor := results.SymbolAnchor(anchorStr)
@@ -88,11 +99,17 @@ func (t *FindSymbolReferencesByAnchorTool) Handle(ctx context.Context, req mcp.C
 	toolResult := results.FindSymbolReferencesByAnchorToolResult{
 		Arguments: results.FindSymbolReferencesByAnchorToolArgs{
 			SymbolAnchor: anchorStr,
+			Limit:        limit,
 		},
 		References: make([]results.SymbolReference, 0),
 	}
 
 	for _, refLoc := range refLocations {
+		// Apply limit to prevent token overflow
+		if len(toolResult.References) >= limit {
+			break
+		}
+
 		symbolLoc := results.SymbolLocation{
 			File:        GetRelativePath(UriToPath(refLoc.URI), t.config.WorkspaceRoot),
 			DisplayLine: refLoc.Range.Start.Line + 1,      // Convert LSP coordinates to display line
@@ -119,7 +136,7 @@ func (t *FindSymbolReferencesByAnchorTool) Handle(ctx context.Context, req mcp.C
 			"reference_count", len(toolResult.References))
 	}
 
-	jsonBytes, err := json.MarshalIndent(toolResult, "", "  ")
+	jsonBytes, err := json.Marshal(toolResult)
 	if err != nil {
 		slog.Error("Failed to marshal tool result",
 			"tool", "find_symbol_references_by_anchor",

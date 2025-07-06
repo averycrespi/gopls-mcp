@@ -9,7 +9,9 @@ type ListSymbolsInFileToolResult struct {
 
 // ListSymbolsInFileToolArgs represents the arguments for the list symbols in file tool
 type ListSymbolsInFileToolArgs struct {
-	FilePath string `json:"file_path"`
+	FilePath     string `json:"file_path"`
+	Limit        int    `json:"limit,omitempty"`
+	IncludeHover bool   `json:"include_hover,omitempty"`
 }
 
 // FileSymbol represents a symbol within a file with hierarchical structure

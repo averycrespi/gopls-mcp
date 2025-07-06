@@ -9,7 +9,9 @@ type FindSymbolDefinitionsByNameToolResult struct {
 
 // FindSymbolDefinitionByNameToolArgs represents the arguments for the find symbol definitions by name tool
 type FindSymbolDefinitionByNameToolArgs struct {
-	SymbolName string `json:"symbol_name"`
+	SymbolName   string `json:"symbol_name"`
+	Limit        int    `json:"limit,omitempty"`
+	IncludeHover bool   `json:"include_hover,omitempty"`
 }
 
 // SymbolDefinition represents a symbol definition result

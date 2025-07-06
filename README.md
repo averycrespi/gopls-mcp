@@ -28,12 +28,12 @@ This enables LLMs to work with Go code the same way IDEs do - with full semantic
 
 ## Tools
 
-| Tool                               | Purpose                                           | Input                                        | Output                                                  |
-| ---------------------------------- | ------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------- |
-| `list_symbols_in_file`             | List all symbols in a Go file with hierarchy      | `file_path` (string)                         | Hierarchical list of file symbols                       |
-| `find_symbol_definitions_by_name`  | Find symbol definitions by name with fuzzy search | `symbol_name` (string)                       | List of symbol definitions which fuzzily-match the name |
-| `find_symbol_references_by_anchor` | Find all references to a specific symbol instance | `symbol_anchor` (string)                     | List of symbol references for the anchor                |
-| `rename_symbol_by_anchor`          | Rename a symbol across the entire workspace       | `symbol_anchor` (string), `new_name` (string) | List of name changes per file (old→new)                 |
+| Tool                               | Purpose                                           | Input                                   | Output                                                  |
+| ---------------------------------- | ------------------------------------------------- | --------------------------------------- | ------------------------------------------------------- |
+| `list_symbols_in_file`             | List all symbols in a Go file with hierarchy      | `file_path`, `limit`, `include_hover`   | Hierarchical list of file symbols                       |
+| `find_symbol_definitions_by_name`  | Find symbol definitions by name with fuzzy search | `symbol_name`, `limit`, `include_hover` | List of symbol definitions which fuzzily-match the name |
+| `find_symbol_references_by_anchor` | Find all references to a specific symbol instance | `symbol_anchor`, `limit`                | List of symbol references for the anchor                |
+| `rename_symbol_by_anchor`          | Rename a symbol across the entire workspace       | `symbol_anchor`, `new_name`             | List of name changes per file (old→new)                 |
 
 All tools return structured JSON responses with precise location information and symbol anchors for disambiguation.
 
@@ -117,35 +117,43 @@ Anchors use display coordinates that match what you see in your editor. They are
 Find the definitions of a symbol by name in the Go workspace, returning a list of symbol definitions with fuzzy search.
 
 **Parameters:**
-- `symbol_name` (string): Symbol name to find the definitions for, with fuzzy matching
+- `symbol_name` (string, required): Symbol name to find the definitions for, with fuzzy matching
+- `limit` (number, optional): Maximum number of symbol definitions to return (default: 50)
+- `include_hover` (boolean, optional): Whether to include hover information for symbols (default: false)
 
 **Response:** JSON object containing:
 - `message`: Summary message about the results (e.g., "Found 3 symbol definitions in the Go workspace." or "No symbol definitions found in the Go workspace.")
 - `arguments`: Input arguments echoed back with:
   - `symbol_name`: The searched symbol name
+  - `limit`: Maximum number of results (if specified)
+  - `include_hover`: Whether hover info was included (if specified)
 - `definitions`: Array of symbol definition objects (may be empty), each containing:
   - `name`: Symbol name
   - `kind`: Symbol type (function, struct, method, etc.)
   - `location`: File path, line, and character position
   - `anchor`: Symbol anchor in format `go://FILE#LINE:CHAR` (display coordinates)
-  - `hover_info`: Hover information from the language server (if available)
+  - `hover_info`: Hover information from the language server (only included if `include_hover` is true)
 
 ### Tool: list_symbols_in_file
 List all symbols in a Go file, returning a list of symbols with hierarchical structure.
 
 **Parameters:**
-- `file_path` (string): Path to the Go file
+- `file_path` (string, required): Path to the Go file
+- `limit` (number, optional): Maximum number of symbols to return (default: 100)
+- `include_hover` (boolean, optional): Whether to include hover information for symbols (default: false)
 
 **Response:** JSON object containing:
 - `message`: Summary message about the results (e.g., "Found 8 symbols in file." or "No symbols found in file.")
 - `arguments`: Input arguments echoed back with:
   - `file_path`: The path to the analyzed file
+  - `limit`: Maximum number of results (if specified)
+  - `include_hover`: Whether hover info was included (if specified)
 - `file_symbols`: Array of file symbol objects (may be empty), each containing:
   - `name`: Symbol name
   - `kind`: Symbol type (function, struct, method, etc.)
   - `location`: File path, line, and character position
   - `anchor`: Symbol anchor in format `go://FILE#LINE:CHAR` (display coordinates)
-  - `hover_info`: Hover information from the language server (if available)
+  - `hover_info`: Hover information from the language server (only included if `include_hover` is true)
   - `children`: Array of child symbols (for hierarchical symbols like structs with fields, methods, etc.)
 
 The tool provides full hierarchical support for Go symbols. For example:
@@ -159,12 +167,14 @@ This hierarchical structure is enabled by the LSP client's `hierarchicalDocument
 Find all references to a symbol by its precise anchor location in the Go workspace.
 
 **Parameters:**
-- `symbol_anchor` (string): Symbol anchor in format `go://FILE#LINE:CHAR` (display coordinates)
+- `symbol_anchor` (string, required): Symbol anchor in format `go://FILE#LINE:CHAR` (display coordinates)
+- `limit` (number, optional): Maximum number of symbol references to return (default: 100)
 
 **Response:** JSON object containing:
 - `message`: Summary message about the results (e.g., "Found 8 references for the symbol anchor." or "No references found for the symbol anchor.")
 - `arguments`: Input arguments echoed back with:
   - `symbol_anchor`: The input symbol anchor used for the search
+  - `limit`: Maximum number of results (if specified)
 - `references`: Array of reference objects, each containing:
   - `location`: Reference location with:
     - `file`: Relative file path from workspace root
@@ -196,7 +206,7 @@ Rename a symbol by its precise anchor location across the entire Go workspace.
     - `old_text`: The text being replaced
     - `new_text`: The replacement text
 
-**Notes:** 
+**Notes:**
 - This tool uses gopls's rename functionality which includes validation to prevent breaking changes
 - The rename will fail if it would introduce compilation errors
 - Go keywords cannot be used as new names

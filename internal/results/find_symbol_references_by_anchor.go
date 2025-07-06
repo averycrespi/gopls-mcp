@@ -10,6 +10,7 @@ type FindSymbolReferencesByAnchorToolResult struct {
 // FindSymbolReferencesByAnchorToolArgs represents the arguments for the find symbol references by anchor tool
 type FindSymbolReferencesByAnchorToolArgs struct {
 	SymbolAnchor string `json:"symbol_anchor"`
+	Limit        int    `json:"limit,omitempty"`
 }
 
 // SymbolReference represents a symbol reference

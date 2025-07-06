@@ -71,9 +71,9 @@ Structured output types in `internal/results/`:
 - `symbol_kind.go` - SymbolKind enum with LSP mapping (file, function, struct, etc.)
 - `symbol_location.go` - Location information with file paths and positions, plus anchor conversion
 - `symbol_anchor.go` - SymbolAnchor type for precise symbol identification with format `go://FILE#LINE:CHAR` (1-indexed coordinates)
-- `find_symbol_definitions_by_name.go` - FindSymbolDefinitionsByNameToolResult with standardized structure (message, arguments with symbol_name, SymbolDefinition array)
-- `find_symbol_references_by_anchor.go` - FindSymbolReferencesByAnchorToolResult with standardized structure (message, arguments with symbol_anchor, SymbolReference array)
-- `list_symbols_in_file.go` - ListSymbolsInFileToolResult with standardized structure (message, arguments with file_path, hierarchical FileSymbol array)
+- `find_symbol_definitions_by_name.go` - FindSymbolDefinitionsByNameToolResult with standardized structure (message, arguments with symbol_name/limit/include_hover, SymbolDefinition array)
+- `find_symbol_references_by_anchor.go` - FindSymbolReferencesByAnchorToolResult with standardized structure (message, arguments with symbol_anchor/limit, SymbolReference array)
+- `list_symbols_in_file.go` - ListSymbolsInFileToolResult with standardized structure (message, arguments with file_path/limit/include_hover, hierarchical FileSymbol array)
 - `rename_symbol_by_anchor.go` - RenameSymbolByAnchorToolResult with standardized structure (message, arguments with symbol_anchor and new_name, FileEdit array with simplified name changes)
 
 ### Interface Design
@@ -103,12 +103,15 @@ The codebase uses Go's built-in `slog` package for comprehensive logging:
 ### JSON Output
 All symbol tools return standardized JSON responses with:
 - **Consistent Structure**: `message`, `arguments`, and tool-specific results (`definitions`, `references`, `file_symbols`)
-- **Input Echo**: Arguments field echoes back input parameters for validation and debugging
+- **Input Echo**: Arguments field echoes back all input parameters (including optional limit/include_hover) for validation and debugging
+- **Token Optimization**: Compact JSON format (no pretty-printing) to minimize response size
+- **Response Limiting**: Built-in limits prevent token overflow (50 for definitions, 100 for references/symbols)
+- **Optional Hover Info**: Verbose hover information only included when explicitly requested via `include_hover` parameter
 - Type-safe SymbolKind enums (function, struct, method, etc.) where applicable
-- Rich metadata including hover info from the language server (for definition tools)
 - Relative file paths from workspace root
 - Symbol anchors for precise identification (`go://FILE#LINE:CHAR` format)
 - Descriptive messages and metadata (e.g., file paths, symbol counts, reference counts)
+- **Response Size Monitoring**: All tools log response size in bytes for optimization tracking
 
 ### Symbol Anchor System
 Enables precise symbol identification and eliminates ambiguity:
@@ -214,6 +217,7 @@ For troubleshooting issues:
 **Common Debugging Scenarios:**
 - **Tool failures**: Check parameter validation and LSP method calls in debug logs
 - **Performance issues**: Monitor request timing and symbol counts
+- **Token limit issues**: Check response_size_bytes in logs and adjust limit parameters
 - **LSP communication problems**: Review JSON-RPC request/response sequences
 - **Symbol resolution**: Trace workspace symbol searches and definition lookups
 
