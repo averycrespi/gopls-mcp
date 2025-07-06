@@ -70,10 +70,6 @@ func (t *SymbolDefinitionTool) Handle(ctx context.Context, req mcp.CallToolReque
 			},
 		}
 
-		// Try to enhance with hover information
-		if hoverInfo, hoverErr := t.client.GetHoverInfo(ctx, def.URI, def.Range.Start); hoverErr == nil && hoverInfo != "" {
-			entry.Documentation = hoverInfo
-		}
 
 		// Try to enhance with source context
 		if file, err := os.Open(UriToPath(def.URI)); err == nil {
