@@ -15,7 +15,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `make test-find-symbol-definitions-by-name` - Test find_symbol_definitions_by_name tool with pretty-printed JSON output
 - `make test-find-symbol-references-by-anchor` - Test find_symbol_references_by_anchor tool with pretty-printed JSON output
 - `make test-list-symbols-in-file` - Test list_symbols_in_file tool with pretty-printed JSON output
+- `make test-rename-symbol-by-anchor` - Test rename_symbol_by_anchor tool with automatic backup/restore
 - Uses `scripts/test-mcp-tool.sh` for JSON extraction and formatting
+- Uses `scripts/test-rename-tool.sh` for rename testing with file backup/restore
 
 ### Dependencies
 - `make deps` - Download and tidy Go modules

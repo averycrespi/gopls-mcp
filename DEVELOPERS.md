@@ -140,7 +140,9 @@ The `list_symbols_in_file` tool provides full hierarchical support for Go symbol
 - `make test-find-symbol-definitions-by-name` - Test find_symbol_definitions_by_name tool with pretty-printed JSON output
 - `make test-find-symbol-references-by-anchor` - Test find_symbol_references_by_anchor tool with pretty-printed JSON output
 - `make test-list-symbols-in-file` - Test list_symbols_in_file tool with pretty-printed JSON output
+- `make test-rename-symbol-by-anchor` - Test rename_symbol_by_anchor tool with automatic backup/restore
 - Uses `scripts/test-mcp-tool.sh` for JSON extraction and formatting
+- Uses `scripts/test-rename-tool.sh` for rename testing with file backup/restore
 
 ### Dependencies
 - `make deps` - Download and tidy Go modules
@@ -230,3 +232,14 @@ The project includes both unit and integration tests:
 - Test fixtures in `testdata/` provide sample Go projects for testing
 
 Run all tests with `make test test-integration`.
+
+### Testing Safety
+
+For tools that modify files (like `rename_symbol_by_anchor`), special safety measures are in place:
+
+- **Automatic Backup**: The `test-rename-symbol-by-anchor` target automatically backs up `testdata/example` before running tests
+- **Guaranteed Restore**: A bash trap ensures the original files are restored even if the test fails or is interrupted
+- **Isolated Testing**: Each test run uses a unique backup directory to avoid conflicts
+- **Visual Feedback**: Tests show before/after states and clearly indicate whether changes occurred
+
+The backup/restore mechanism ensures that the test environment remains pristine and tests can be run repeatedly without side effects.

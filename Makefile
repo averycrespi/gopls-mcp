@@ -1,4 +1,4 @@
-.PHONY: build test test-integration clean install help run test-find-symbol-definitions-by-name test-find-symbol-references-by-anchor test-list-symbols-in-file
+.PHONY: build test test-integration clean install help run test-find-symbol-definitions-by-name test-find-symbol-references-by-anchor test-list-symbols-in-file test-rename-symbol-by-anchor
 
 # Default target
 all: build
@@ -45,6 +45,10 @@ test-find-symbol-references-by-anchor: build
 test-list-symbols-in-file: build
 	@./scripts/test-mcp-tool.sh list_symbols_in_file
 
+# Test rename symbol by anchor tool
+test-rename-symbol-by-anchor: build
+	@./scripts/test-rename-tool.sh
+
 # Show help
 help:
 	@echo "Available targets:"
@@ -58,4 +62,5 @@ help:
 	@echo "  test-find-symbol-definitions-by-name     Test find_symbol_definitions_by_name MCP tool"
 	@echo "  test-find-symbol-references-by-anchor    Test find_symbol_references_by_anchor MCP tool"
 	@echo "  test-list-symbols-in-file                Test list_symbols_in_file MCP tool"
+	@echo "  test-rename-symbol-by-anchor             Test rename_symbol_by_anchor MCP tool (with backup/restore)"
 	@echo "  help                                     Show this help message"

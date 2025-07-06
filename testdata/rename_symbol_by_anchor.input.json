@@ -1,0 +1,12 @@
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "rename_symbol_by_anchor",
+    "arguments": {
+      "symbol_anchor": "go://calculator.go#6:6",
+      "new_name": "MyCalculator"
+    }
+  }
+}
