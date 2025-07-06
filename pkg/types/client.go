@@ -2,7 +2,6 @@ package types
 
 import (
 	"context"
-	"encoding/json"
 )
 
 // Client defines the LSP client interface
@@ -13,10 +12,8 @@ type Client interface {
 	GoToDefinition(ctx context.Context, uri string, position Position) ([]Location, error)
 	FindReferences(ctx context.Context, uri string, position Position) ([]Location, error)
 	Hover(ctx context.Context, uri string, position Position) (string, error)
-	GetDiagnostics(ctx context.Context, uri string) ([]Diagnostic, error)
 	GetCompletion(ctx context.Context, uri string, position Position) ([]CompletionItem, error)
-	FormatDocument(ctx context.Context, uri string) ([]json.RawMessage, error)
-	RenameSymbol(ctx context.Context, uri string, position Position, newName string) (map[string][]json.RawMessage, error)
+	FindSymbol(ctx context.Context, query string) ([]SymbolInformation, error)
 }
 
 // Position represents a position in a text document

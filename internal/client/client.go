@@ -230,12 +230,6 @@ func (c *GoplsClient) Hover(ctx context.Context, uri string, position types.Posi
 	return fmt.Sprintf("%v", hover.Contents), nil
 }
 
-func (c *GoplsClient) GetDiagnostics(ctx context.Context, uri string) ([]types.Diagnostic, error) {
-	// Note: Diagnostics are typically sent as notifications, not requests
-	// This is a simplified implementation
-	return []types.Diagnostic{}, nil
-}
-
 func (c *GoplsClient) GetCompletion(ctx context.Context, uri string, position types.Position) ([]types.CompletionItem, error) {
 	params := map[string]any{
 		"textDocument": map[string]any{
@@ -257,6 +251,35 @@ func (c *GoplsClient) GetCompletion(ctx context.Context, uri string, position ty
 	}
 
 	return completion.Items, nil
+}
+
+func (c *GoplsClient) FindSymbol(ctx context.Context, query string) ([]types.SymbolInformation, error) {
+	params := map[string]any{
+		"query": query,
+	}
+
+	response, err := c.transport.SendRequest("workspace/symbol", params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get workspace symbols: %w", err)
+	}
+
+	// LSP workspace/symbol response can be null or SymbolInformation[]
+	var rawResponse json.RawMessage
+	if err := json.Unmarshal(response, &rawResponse); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal workspace symbol response: %w", err)
+	}
+
+	// Handle null response
+	if string(rawResponse) == "null" {
+		return []types.SymbolInformation{}, nil
+	}
+
+	var symbols []types.SymbolInformation
+	if err := json.Unmarshal(rawResponse, &symbols); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal workspace symbol response: %w", err)
+	}
+
+	return symbols, nil
 }
 
 func (c *GoplsClient) FormatDocument(ctx context.Context, uri string) ([]json.RawMessage, error) {

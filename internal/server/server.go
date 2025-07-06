@@ -60,4 +60,7 @@ func (s *GoplsServer) registerTools() {
 	completionTool := tools.NewGetCompletionTool(s.goplsClient, s.config)
 	s.mcpServer.AddTool(completionTool.GetTool(), completionTool.Handle)
 
+	findSymbolTool := tools.NewFindSymbolTool(s.goplsClient, s.config)
+	s.mcpServer.AddTool(findSymbolTool.GetTool(), findSymbolTool.Handle)
+
 }

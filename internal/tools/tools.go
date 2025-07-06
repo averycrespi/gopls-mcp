@@ -14,8 +14,7 @@ const (
 	ToolFindReferences = "find_references"
 	ToolHoverInfo      = "hover_info"
 	ToolGetCompletion  = "get_completion"
-	ToolFormatCode     = "format_code"
-	ToolRenameSymbol   = "rename_symbol"
+	ToolFindSymbol     = "find_symbol"
 )
 
 // getFileURI converts a file path to a file URI

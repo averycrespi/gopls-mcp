@@ -9,16 +9,13 @@ gopls-mcp bridges the gap between LLMs and Go development by providing an MCP in
 ## Features
 
 ### Navigation Tools
-- **go_to_definition**: Find the definition of a symbol in Go code
+- **go_to_definition**: Find the definition of a symbol by name
 - **find_references**: Find all references to a symbol across the project
+- **find_symbol**: Search for symbols by name across the workspace
 
 ### Code Analysis Tools
 - **hover_info**: Get detailed information about symbols (types, documentation, etc.)
 - **get_completion**: Get code completion suggestions at any position
-
-### Code Transformation Tools
-- **format_code**: Format Go code using gofmt standards
-- **rename_symbol**: Safely rename symbols across the entire project
 
 ## Installation
 
@@ -80,12 +77,16 @@ Example configuration:
 ## Available MCP Tools
 
 ### go_to_definition
-Find where a symbol is defined.
+Find where a symbol is defined by searching for it by name.
 
 **Parameters:**
-- `file_path` (string): Path to the Go file
-- `line` (number): Line number (0-based)
-- `character` (number): Character position (0-based)
+- `symbol` (string): Symbol name to find the definition for
+
+### find_symbol
+Search for symbols by name across the workspace.
+
+**Parameters:**
+- `query` (string): Symbol name or pattern to search for
 
 ### find_references
 Find all references to a symbol.
@@ -110,21 +111,6 @@ Get code completion suggestions.
 - `file_path` (string): Path to the Go file
 - `line` (number): Line number (0-based)
 - `character` (number): Character position (0-based)
-
-### format_code
-Format Go code using gofmt.
-
-**Parameters:**
-- `file_path` (string): Path to the Go file
-
-### rename_symbol
-Rename a symbol across the project.
-
-**Parameters:**
-- `file_path` (string): Path to the Go file
-- `line` (number): Line number (0-based)
-- `character` (number): Character position (0-based)
-- `new_name` (string): New name for the symbol
 
 ## Architecture
 

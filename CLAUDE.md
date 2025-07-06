@@ -43,7 +43,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 ### Key Design Patterns
 
 **Tool Registration**: Each MCP tool is implemented in its own file in `internal/tools/`:
-- `go_to_definition.go` - `go_to_definition` → LSP Definition request
+- `go_to_definition.go` - `go_to_definition` → LSP WorkspaceSymbol + Definition requests
 - `find_references.go` - `find_references` → LSP References request
 - `hover_info.go` - `hover_info` → LSP Hover request
 - `get_completion.go` - `get_completion` → LSP Completion request
@@ -69,7 +69,7 @@ The server uses the `github.com/mark3labs/mcp-go` framework and communicates via
 claude mcp add gopls-mcp go run github.com/averycrespi/gopls-mcp@latest
 ```
 
-All tools require `file_path`, `line`, and `character` parameters (0-based indexing).
+Most tools require `file_path`, `line`, and `character` parameters (0-based indexing), except `go_to_definition` which accepts a `symbol` parameter to search for symbols by name.
 
 ## Development Guidelines
 
