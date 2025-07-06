@@ -207,6 +207,44 @@ func validateSymbolReferenceResult(t *testing.T, jsonContent string, expectedSym
 	}
 }
 
+// validateFileSymbolResult validates the structure of a file symbol result
+func validateFileSymbolResult(t *testing.T, jsonContent string) {
+	var symbols []results.FileSymbolResult
+	err := json.Unmarshal([]byte(jsonContent), &symbols)
+	assert.NoError(t, err, "Should be able to unmarshal file symbol results")
+
+	// Validate basic structure
+	assert.Greater(t, len(symbols), 0, "Should have found at least one symbol")
+
+	// Validate first symbol
+	firstSymbol := symbols[0]
+	assert.NotEmpty(t, firstSymbol.Name, "Symbol name should not be empty")
+	assert.NotEmpty(t, firstSymbol.Kind, "Symbol kind should not be empty")
+	assert.NotEmpty(t, firstSymbol.Location.File, "Symbol file should not be empty")
+	assert.Greater(t, firstSymbol.Location.Line, 0, "Symbol line should be positive")
+
+	// Look for a struct symbol to verify hierarchical structure
+	var structSymbol *results.FileSymbolResult
+	for _, symbol := range symbols {
+		if symbol.Kind == "struct" {
+			structSymbol = &symbol
+			break
+		}
+	}
+
+	// If we found a struct symbol, it should potentially have children (fields)
+	if structSymbol != nil {
+		t.Logf("Found struct symbol '%s' with %d children", structSymbol.Name, len(structSymbol.Children))
+		// Note: Children may be empty if the struct has no fields, which is valid
+		if len(structSymbol.Children) > 0 {
+			// Validate first child if present
+			firstChild := structSymbol.Children[0]
+			assert.NotEmpty(t, firstChild.Name, "Child symbol name should not be empty")
+			assert.NotEmpty(t, firstChild.Kind, "Child symbol kind should not be empty")
+			assert.Greater(t, firstChild.Location.Line, 0, "Child symbol line should be positive")
+		}
+	}
+}
 
 // initialize sends the MCP initialize request
 func (s *MCPServerProcess) initialize(t *testing.T) {
@@ -264,6 +302,7 @@ func TestMCPServerIntegration(t *testing.T) {
 		expectedTools := []string{
 			"symbol_definition",
 			"symbol_references",
+			"file_symbols",
 		}
 
 		assert.Len(t, tools, len(expectedTools), "Should have exactly %d tools", len(expectedTools))
@@ -319,7 +358,6 @@ func TestMCPServerIntegration(t *testing.T) {
 		t.Logf("Symbol definition content: %v", contentStr)
 	})
 
-
 	t.Run("SymbolReferences", func(t *testing.T) {
 		// Test symbol references by searching for "Calculator" symbol
 		req := MCPRequest{
@@ -347,6 +385,37 @@ func TestMCPServerIntegration(t *testing.T) {
 		validateSymbolReferenceResult(t, contentStr, "Calculator")
 
 		t.Logf("Symbol references content: %v", contentStr)
+	})
+
+	t.Run("FileSymbols", func(t *testing.T) {
+		// Test file symbols by analyzing calculator.go file
+		calcFile := filepath.Join(workspaceRoot, "calculator.go")
+
+		req := MCPRequest{
+			JSONRPC: "2.0",
+			ID:      6,
+			Method:  "tools/call",
+			Params: map[string]any{
+				"name": "file_symbols",
+				"arguments": map[string]any{
+					"file_path": calcFile,
+				},
+			},
+		}
+
+		resp := server.sendRequest(t, req)
+		assert.Nil(t, resp.Error, "File symbols should not return an error")
+
+		// Validate that we got file symbols result
+		var result map[string]any
+		err := json.Unmarshal(resp.Result, &result)
+		assert.NoError(t, err, "Should be able to unmarshal file symbols result")
+
+		// Parse and validate the JSON response structure
+		contentStr := parseToolResult(t, result)
+		validateFileSymbolResult(t, contentStr)
+
+		t.Logf("File symbols content: %v", contentStr)
 	})
 
 }
