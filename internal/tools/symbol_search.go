@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/averycrespi/gopls-mcp/internal/results"
 	"github.com/averycrespi/gopls-mcp/pkg/types"
@@ -67,7 +68,7 @@ func (t *SymbolSearchTool) Handle(ctx context.Context, req mcp.CallToolRequest) 
 			Name: sym.Name,
 			Kind: results.NewSymbolKind(sym.Kind),
 			Location: results.SymbolLocation{
-				File:      getRelativePath(uriToPath(sym.Location.URI), t.config.WorkspaceRoot),
+				File:      GetRelativePath(UriToPath(sym.Location.URI), t.config.WorkspaceRoot),
 				Line:      sym.Location.Range.Start.Line + 1,
 				Character: sym.Location.Range.Start.Character + 1,
 			},
@@ -79,8 +80,11 @@ func (t *SymbolSearchTool) Handle(ctx context.Context, req mcp.CallToolRequest) 
 		}
 
 		// Try to enhance the result with source context
-		if sourceContext, err := readSourceContext(sym.Location.URI, sym.Location.Range.Start.Line, sym.Location.Range.Start.Character, 2); err == nil {
-			entry.Source = sourceContext
+		if file, err := os.Open(UriToPath(sym.Location.URI)); err == nil {
+			defer file.Close()
+			if sourceContext, err := ReadSourceContext(file, sym.Location.Range.Start.Line, 2); err == nil {
+				entry.Source = sourceContext
+			}
 		}
 
 		result.Symbols = append(result.Symbols, entry)

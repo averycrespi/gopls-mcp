@@ -41,12 +41,12 @@ func (t *FindReferencesTool) Handle(ctx context.Context, req mcp.CallToolRequest
 		return mcp.NewToolResultError("file_path parameter is required"), nil
 	}
 
-	position, err := getPosition(req)
+	position, err := GetPosition(req)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	uri := getFileURI(filePath, t.config.WorkspaceRoot)
+	uri := PathToUri(filePath, t.config.WorkspaceRoot)
 	locations, err := t.client.FindReferences(ctx, uri, position)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to find references: %v", err)), nil

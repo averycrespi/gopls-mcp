@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/averycrespi/gopls-mcp/internal/results"
 	"github.com/averycrespi/gopls-mcp/pkg/types"
@@ -68,7 +69,7 @@ func (t *SymbolDefinitionTool) Handle(ctx context.Context, req mcp.CallToolReque
 			Name: sym.Name,
 			Kind: results.NewSymbolKind(sym.Kind),
 			Location: results.SymbolLocation{
-				File:      getRelativePath(uriToPath(sym.Location.URI), t.config.WorkspaceRoot),
+				File:      GetRelativePath(UriToPath(sym.Location.URI), t.config.WorkspaceRoot),
 				Line:      sym.Location.Range.Start.Line + 1,
 				Character: sym.Location.Range.Start.Character + 1,
 			},
@@ -87,20 +88,23 @@ func (t *SymbolDefinitionTool) Handle(ctx context.Context, req mcp.CallToolReque
 			for _, def := range definitions {
 				defInfo := results.SymbolDefinitionInfo{
 					Location: results.SymbolLocation{
-						File:      getRelativePath(uriToPath(def.URI), t.config.WorkspaceRoot),
+						File:      GetRelativePath(UriToPath(def.URI), t.config.WorkspaceRoot),
 						Line:      def.Range.Start.Line + 1,
 						Character: def.Range.Start.Character + 1,
 					},
 				}
 
-				// Try to get hover information for the definition
+				// Try to enhance the definition with hover information
 				if hoverInfo, hoverErr := t.client.GetHoverInfo(ctx, def.URI, def.Range.Start); hoverErr == nil && hoverInfo != "" {
 					defInfo.Documentation = hoverInfo
 				}
 
-				// Try to get source context for definition
-				if sourceContext, contextErr := readSourceContext(def.URI, def.Range.Start.Line, def.Range.Start.Character, 3); contextErr == nil {
-					defInfo.Source = sourceContext
+				// Try to enhance the definition with source context
+				if file, err := os.Open(UriToPath(def.URI)); err == nil {
+					defer file.Close()
+					if sourceContext, contextErr := ReadSourceContext(file, def.Range.Start.Line, 3); contextErr == nil {
+						defInfo.Source = sourceContext
+					}
 				}
 
 				entry.Definitions = append(entry.Definitions, defInfo)

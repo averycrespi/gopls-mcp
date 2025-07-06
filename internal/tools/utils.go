@@ -3,7 +3,7 @@ package tools
 import (
 	"bufio"
 	"fmt"
-	"os"
+	"io"
 	"path/filepath"
 	"strings"
 
@@ -18,8 +18,8 @@ const (
 	ToolGetCompletion  = "get_completion"
 )
 
-// getFileURI converts a file path to a file URI
-func getFileURI(filePath string, workspaceRoot string) string {
+// PathToUri converts a file path to a file URI
+func PathToUri(filePath string, workspaceRoot string) string {
 	if strings.HasPrefix(filePath, "file://") {
 		return filePath
 	}
@@ -31,8 +31,13 @@ func getFileURI(filePath string, workspaceRoot string) string {
 	return "file://" + filePath
 }
 
-// getPosition extracts position from MCP request
-func getPosition(req mcp.CallToolRequest) (types.Position, error) {
+// UriToPath converts a file URI to a local file path
+func UriToPath(uri string) string {
+	return strings.TrimPrefix(uri, "file://")
+}
+
+// GetPosition extracts position from MCP request
+func GetPosition(req mcp.CallToolRequest) (types.Position, error) {
 	line := mcp.ParseFloat64(req, "line", 0)
 	character := mcp.ParseFloat64(req, "character", 0)
 
@@ -42,32 +47,18 @@ func getPosition(req mcp.CallToolRequest) (types.Position, error) {
 	}, nil
 }
 
-// uriToPath converts a file URI to a local file path
-func uriToPath(uri string) string {
-	if strings.HasPrefix(uri, "file://") {
-		return strings.TrimPrefix(uri, "file://")
-	}
-	return uri
-}
-
-// getRelativePath converts absolute path to relative path from workspace root
-func getRelativePath(absolutePath, workspaceRoot string) string {
+// GetRelativePath converts an absolute path to a relative path from the workspace root
+func GetRelativePath(absolutePath, workspaceRoot string) string {
 	if rel, err := filepath.Rel(workspaceRoot, absolutePath); err == nil {
 		return rel
 	}
 	return filepath.Base(absolutePath)
 }
 
-// readSourceLines reads specific source lines from a file
-func readSourceLines(filePath string, startLine, endLine int, highlightLine int) ([]results.SourceLine, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open file: %w", err)
-	}
-	defer file.Close()
-
+// ReadSourceLines reads specific source lines
+func ReadSourceLines(reader io.Reader, startLine, endLine int, highlightLine int) ([]results.SourceLine, error) {
 	var sourceLines []results.SourceLine
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(reader)
 	currentLine := 0
 
 	for scanner.Scan() {
@@ -88,26 +79,20 @@ func readSourceLines(filePath string, startLine, endLine int, highlightLine int)
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("failed to read source lines: %w", err)
+		return nil, fmt.Errorf("failed to scan source lines: %w", err)
 	}
 
 	return sourceLines, nil
 }
 
-// readSourceContext reads source code around a location and returns structured SourceContext
-func readSourceContext(uri string, startLine, startChar int, contextLines int) (*results.SourceContext, error) {
-	filePath := uriToPath(uri)
-
-	// Read lines around the symbol (with context)
-	contextStart := startLine - contextLines
-	if contextStart < 0 {
-		contextStart = 0
-	}
+// ReadSourceContext reads source code around a location and returns structured SourceContext
+func ReadSourceContext(reader io.Reader, startLine, contextLines int) (*results.SourceContext, error) {
+	contextStart := max(0, startLine-contextLines)
 	contextEnd := startLine + contextLines
 
-	sourceLines, err := readSourceLines(filePath, contextStart, contextEnd, startLine)
+	sourceLines, err := ReadSourceLines(reader, contextStart, contextEnd, startLine)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read source lines: %w", err)
 	}
 
 	return &results.SourceContext{Lines: sourceLines}, nil
