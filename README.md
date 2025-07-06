@@ -1,13 +1,34 @@
 # gopls-mcp
 
-An MCP (Model Context Protocol) server that exposes the LSP functionality of the [gopls](https://pkg.go.dev/golang.org/x/tools/gopls) language server, enabling LLMs to work with Go projects more effectively.
+An MCP (Model Context Protocol) server that exposes the LSP functionality of the [gopls](https://pkg.go.dev/golang.org/x/tools/gopls) language server.
+
+## Purpose
+
+Working with Go code requires understanding its semantic structure, not just text patterns. Traditional text-based operations like grep and find are insufficient for Go development because:
+
+- **Semantic Understanding**: Go symbols have context-dependent meanings. A function name `Add` could refer to different functions across packages, methods on different types, or even variables.
+- **Precision**: Text search returns false positives and misses semantic relationships like interface implementations, type aliases, and embedded fields.
+- **Scope Awareness**: Go's scoping rules (package, function, block) determine symbol visibility and meaning, which text search cannot understand.
+- **Type Information**: Go's type system provides rich metadata (methods, fields, interfaces) that's essential for code navigation and understanding.
+
+gopls-mcp bridges this gap by leveraging the Go language server's semantic analysis capabilities:
+
+- **Symbol Resolution**: Finds exact symbol definitions, not just text matches
+- **Reference Tracking**: Identifies all actual references to a symbol, excluding false positives
+- **Hierarchical Structure**: Understands Go's package/type/method hierarchy
+- **Type-Aware Navigation**: Follows Go's semantic relationships between symbols
+
+This enables LLMs to work with Go code the same way IDEs do - with full semantic understanding rather than pattern matching.
 
 ## Tools
 
-gopls-mcp provides the following tools:
-- **find_symbol_definitions_by_name**: Find the definition of a symbol by name.
-- **find_symbol_references_by_anchor**: Find all references to a symbol by anchor name.
-- **list_symbols_in_file**: Get all symbols in a Go file.
+| Tool                               | Purpose                                           | Input                    | Output                                                  |
+| ---------------------------------- | ------------------------------------------------- | ------------------------ | ------------------------------------------------------- |
+| `list_symbols_in_file`             | List all symbols in a Go file with hierarchy      | `file_path` (string)     | Hierarchical list of file symbols                       |
+| `find_symbol_definitions_by_name`  | Find symbol definitions by name with fuzzy search | `symbol_name` (string)   | List of symbol definitions which fuzzily-match the name |
+| `find_symbol_references_by_anchor` | Find all references to a specific symbol instance | `symbol_anchor` (string) | List of symbol references for the anchor                |
+
+All tools return structured JSON responses with precise location information and symbol anchors for disambiguation.
 
 ## Installation
 
@@ -136,9 +157,12 @@ Find all references to a symbol by its precise anchor location in the Go workspa
 - `name`: Symbol name
 - `kind`: Symbol type (function, struct, method, etc.)
 - `location`: File path, line, and character position of the symbol definition
-- `anchor`: The anchor used for the search
+- `anchor`: Symbol anchor in format `go://FILE#LINE:CHAR` (display coordinates)
 - `hover_info`: Hover information from the language server (if available)
-- `references`: Array of locations where the symbol is referenced
+- `references`: Array of reference location objects, each containing:
+  - `file`: Relative file path from workspace root
+  - `line`: Display line number (starts at 1, matches editor display)
+  - `character`: Display character position (starts at 1, matches editor display)
 
 **Note:** This tool requires a precise anchor from the output of `find_symbol_definitions_by_name` or `list_symbols_in_file` tools to identify the exact symbol instance.
 

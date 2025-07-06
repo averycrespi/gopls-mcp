@@ -60,7 +60,9 @@ func (t *JsonRpcTransport) isClosed() bool {
 }
 
 func (t *JsonRpcTransport) readResponses() {
-	defer t.Stop()
+	defer func() {
+		_ = t.Stop()
+	}()
 
 	for {
 		// Read one response at a time until the transport is closed

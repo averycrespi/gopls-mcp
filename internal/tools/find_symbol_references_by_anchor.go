@@ -78,7 +78,7 @@ func (t *FindSymbolReferencesByAnchorTool) Handle(ctx context.Context, req mcp.C
 
 	// Try to get the symbol at this location to determine name and kind
 	symbols, symbolErr := t.client.GetDocumentSymbols(ctx, absPath)
-	var symbolName string = "Unknown"
+	symbolName := "Unknown"
 	var symbolKind results.SymbolKind = "unknown"
 
 	if symbolErr == nil {

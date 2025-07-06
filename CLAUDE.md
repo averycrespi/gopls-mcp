@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `make build` - Build the gopls-mcp binary to `bin/gopls-mcp`
 - `make test` - Run unit tests
 - `make test-integration` - Run integration tests (builds binary, checks dependencies)
-- `make dev` - Build and run server with current directory as workspace
+- `make run` - Run server (see Running the Server section)
 - `make clean` - Clean build artifacts and caches
 
 ### MCP Tool Testing
@@ -85,7 +85,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 
 **Symbol Anchor System**: Enables precise symbol identification and eliminates ambiguity:
 - Format: `go://FILE#LINE:CHAR` with display coordinates (matches editor display)
-- Generated for all SymbolDefinition and FileSymbol results  
+- Generated for all SymbolDefinition and FileSymbol results
 - Used by `find_symbol_references_by_anchor` for exact reference finding
 - Converts to LSP coordinates internally for protocol operations via `ToFilePosition()`
 - Uses `DisplayLine` and `DisplayChar` fields for clarity throughout codebase
