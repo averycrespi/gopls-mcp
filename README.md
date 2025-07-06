@@ -114,8 +114,9 @@ Find the definitions of a symbol by name in the Go workspace, returning a list o
 - `symbol_name` (string): Symbol name to find the definitions for, with fuzzy matching
 
 **Response:** JSON object containing:
-- `symbol_name`: The searched symbol name
 - `message`: Summary message about the results (e.g., "Found 3 symbol definitions in the Go workspace." or "No symbol definitions found in the Go workspace.")
+- `arguments`: Input arguments echoed back with:
+  - `symbol_name`: The searched symbol name
 - `definitions`: Array of symbol definition objects (may be empty), each containing:
   - `name`: Symbol name
   - `kind`: Symbol type (function, struct, method, etc.)
@@ -130,8 +131,9 @@ List all symbols in a Go file, returning a list of symbols with hierarchical str
 - `file_path` (string): Path to the Go file
 
 **Response:** JSON object containing:
-- `file_path`: The path to the analyzed file
 - `message`: Summary message about the results (e.g., "Found 8 symbols in file." or "No symbols found in file.")
+- `arguments`: Input arguments echoed back with:
+  - `file_path`: The path to the analyzed file
 - `file_symbols`: Array of file symbol objects (may be empty), each containing:
   - `name`: Symbol name
   - `kind`: Symbol type (function, struct, method, etc.)
@@ -154,8 +156,9 @@ Find all references to a symbol by its precise anchor location in the Go workspa
 - `symbol_anchor` (string): Symbol anchor in format `go://FILE#LINE:CHAR` (display coordinates)
 
 **Response:** JSON object containing:
-- `symbol_anchor`: The input symbol anchor used for the search
 - `message`: Summary message about the results (e.g., "Found 8 references for the symbol anchor." or "No references found for the symbol anchor.")
+- `arguments`: Input arguments echoed back with:
+  - `symbol_anchor`: The input symbol anchor used for the search
 - `references`: Array of reference objects, each containing:
   - `location`: Reference location with:
     - `file`: Relative file path from workspace root

@@ -50,7 +50,9 @@ func (t *ListSymbolsInFileTool) Handle(ctx context.Context, req mcp.CallToolRequ
 	}
 
 	toolResult := results.ListSymbolsInFileToolResult{
-		FilePath:    filePath,
+		Arguments: results.ListSymbolsInFileToolArgs{
+			FilePath: filePath,
+		},
 		FileSymbols: make([]results.FileSymbol, 0),
 	}
 	for _, docSym := range documentSymbols {

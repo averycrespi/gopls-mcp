@@ -60,9 +60,9 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - `symbol_kind.go` - SymbolKind enum with LSP mapping (file, function, struct, etc.)
 - `symbol_location.go` - Location information with file paths and positions, plus anchor conversion
 - `symbol_anchor.go` - SymbolAnchor type for precise symbol identification with format `go://FILE#LINE:CHAR` (1-indexed coordinates)
-- `find_symbol_definitions_by_name.go` - FindSymbolDefinitionsByNameToolResult with searched symbol name, message, and SymbolDefinition array (includes anchors)
-- `find_symbol_references_by_anchor.go` - FindSymbolReferencesByAnchorToolResult with simplified reference listing (anchor input, message, and SymbolReference array)
-- `list_symbols_in_file.go` - ListSymbolsInFileToolResult with file path, message, and hierarchical FileSymbol array (includes anchors)
+- `find_symbol_definitions_by_name.go` - FindSymbolDefinitionsByNameToolResult with standardized structure (message, arguments with symbol_name, SymbolDefinition array)
+- `find_symbol_references_by_anchor.go` - FindSymbolReferencesByAnchorToolResult with standardized structure (message, arguments with symbol_anchor, SymbolReference array)
+- `list_symbols_in_file.go` - ListSymbolsInFileToolResult with standardized structure (message, arguments with file_path, hierarchical FileSymbol array)
 
 **Interface Design**: The codebase uses clean interfaces to separate concerns:
 - `types.Client` - Defines LSP client operations including Start/Stop (implemented by GoplsClient)
@@ -76,7 +76,9 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 
 **Error Handling**: LSP errors are wrapped and returned as MCP tool result errors with improved logging and specific error messages.
 
-**JSON Output**: All symbol tools return structured JSON responses with:
+**JSON Output**: All symbol tools return standardized JSON responses with:
+- **Consistent Structure**: `message`, `arguments`, and tool-specific results (`definitions`, `references`, `file_symbols`)
+- **Input Echo**: Arguments field echoes back input parameters for validation and debugging
 - Type-safe SymbolKind enums (function, struct, method, etc.) where applicable
 - Rich metadata including hover info from the language server (for definition tools)
 - Relative file paths from workspace root

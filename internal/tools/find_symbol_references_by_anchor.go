@@ -61,8 +61,10 @@ func (t *FindSymbolReferencesByAnchorTool) Handle(ctx context.Context, req mcp.C
 	}
 
 	toolResult := results.FindSymbolReferencesByAnchorToolResult{
-		SymbolAnchor: anchorStr,
-		References:   make([]results.SymbolReference, 0),
+		Arguments: results.FindSymbolReferencesByAnchorToolArgs{
+			SymbolAnchor: anchorStr,
+		},
+		References: make([]results.SymbolReference, 0),
 	}
 
 	for _, refLoc := range refLocations {

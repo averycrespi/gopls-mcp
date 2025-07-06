@@ -2,9 +2,14 @@ package results
 
 // ListSymbolsInFileToolResult represents the result of the list_symbols_in_file tool
 type ListSymbolsInFileToolResult struct {
-	FilePath    string       `json:"file_path"`
-	Message     string       `json:"message"`
-	FileSymbols []FileSymbol `json:"file_symbols,omitempty"`
+	Message     string                    `json:"message"`
+	Arguments   ListSymbolsInFileToolArgs `json:"arguments"`
+	FileSymbols []FileSymbol              `json:"file_symbols,omitempty"`
+}
+
+// ListSymbolsInFileToolArgs represents the arguments for the list symbols in file tool
+type ListSymbolsInFileToolArgs struct {
+	FilePath string `json:"file_path"`
 }
 
 // FileSymbol represents a symbol within a file with hierarchical structure

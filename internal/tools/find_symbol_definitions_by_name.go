@@ -49,7 +49,9 @@ func (t *FindSymbolDefinitionsByNameTool) Handle(ctx context.Context, req mcp.Ca
 	}
 
 	toolResult := results.FindSymbolDefinitionsByNameToolResult{
-		SymbolName:  symbolName,
+		Arguments: results.FindSymbolDefinitionByNameToolArgs{
+			SymbolName: symbolName,
+		},
 		Definitions: make([]results.SymbolDefinition, 0),
 	}
 	for _, sym := range symbols {

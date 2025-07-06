@@ -173,8 +173,8 @@ func validateFindSymbolDefinitionsByNameToolResult(t *testing.T, jsonContent str
 	assert.NoError(t, err, "Should be able to unmarshal find symbol definitions by name tool result")
 
 	// Validate basic structure
-	assert.Equal(t, expectedSymbol, result.SymbolName, "Searched symbol name should match")
 	assert.NotEmpty(t, result.Message, "Message should not be empty")
+	assert.Equal(t, expectedSymbol, result.Arguments.SymbolName, "Searched symbol name should match")
 	assert.Greater(t, len(result.Definitions), 0, "Should have found at least one symbol")
 
 	// Validate first symbol
@@ -194,13 +194,13 @@ func validateFindSymbolReferencesByAnchorToolResult(t *testing.T, jsonContent st
 	assert.NoError(t, err, "Should be able to unmarshal find symbol references by anchor result")
 
 	// Validate basic structure
-	assert.NotEmpty(t, result.SymbolAnchor, "Symbol anchor should not be empty")
 	assert.NotEmpty(t, result.Message, "Message should not be empty")
+	assert.NotEmpty(t, result.Arguments.SymbolAnchor, "Symbol anchor should not be empty")
 	assert.NotNil(t, result.References, "References should not be nil")
 
 	// Validate that the anchor matches expected format
 	if expectedAnchor != "" {
-		assert.Equal(t, expectedAnchor, result.SymbolAnchor, "Anchor should match expected value")
+		assert.Equal(t, expectedAnchor, result.Arguments.SymbolAnchor, "Anchor should match expected value")
 	}
 
 	// If we have references, validate the first one
@@ -221,8 +221,8 @@ func validateListSymbolsInFileToolResult(t *testing.T, jsonContent string) {
 	assert.NoError(t, err, "Should be able to unmarshal list symbols in file tool result")
 
 	// Validate basic structure
-	assert.NotEmpty(t, result.FilePath, "File path should not be empty")
 	assert.NotEmpty(t, result.Message, "Message should not be empty")
+	assert.NotEmpty(t, result.Arguments.FilePath, "File path should not be empty")
 	assert.Greater(t, len(result.FileSymbols), 0, "Should have found at least one symbol")
 
 	// Validate first symbol

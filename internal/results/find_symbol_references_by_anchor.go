@@ -2,9 +2,14 @@ package results
 
 // FindSymbolReferencesByAnchorToolResult represents the result of the find symbol references by anchor tool
 type FindSymbolReferencesByAnchorToolResult struct {
-	SymbolAnchor string            `json:"symbol_anchor"`
-	Message      string            `json:"message"`
-	References   []SymbolReference `json:"references"`
+	Message    string                               `json:"message"`
+	Arguments  FindSymbolReferencesByAnchorToolArgs `json:"arguments"`
+	References []SymbolReference                    `json:"references"`
+}
+
+// FindSymbolReferencesByAnchorToolArgs represents the arguments for the find symbol references by anchor tool
+type FindSymbolReferencesByAnchorToolArgs struct {
+	SymbolAnchor string `json:"symbol_anchor"`
 }
 
 // SymbolReference represents a symbol reference
