@@ -195,29 +195,6 @@ func validateSymbolDefinitionResult(t *testing.T, jsonContent string, expectedSy
 	}
 }
 
-// validateSymbolSearchResult validates the structure of a symbol search result
-func validateSymbolSearchResult(t *testing.T, jsonContent string, expectedSymbol string) {
-	var result results.SymbolSearchResult
-	err := json.Unmarshal([]byte(jsonContent), &result)
-	assert.NoError(t, err, "Should be able to unmarshal symbol search result")
-
-	// Validate basic structure
-	assert.Equal(t, expectedSymbol, result.Query, "Query should match expected symbol")
-	assert.GreaterOrEqual(t, result.Count, 0, "Count should be non-negative")
-	assert.Len(t, result.Symbols, result.Count, "Symbol count should match actual symbols")
-
-	if result.Count > 0 {
-		// Validate first symbol
-		firstSymbol := result.Symbols[0]
-		assert.Contains(t, firstSymbol.Name, expectedSymbol, "First symbol name should contain expected symbol")
-		assert.NotEmpty(t, firstSymbol.Kind, "Symbol kind should not be empty")
-		assert.NotEmpty(t, firstSymbol.Location.File, "Symbol file should not be empty")
-		assert.Greater(t, firstSymbol.Location.Line, 0, "Symbol line should be positive")
-		if firstSymbol.Source != nil {
-			assert.NotEmpty(t, firstSymbol.Source.Lines, "Source context should have lines")
-		}
-	}
-}
 
 // initialize sends the MCP initialize request
 func (s *MCPServerProcess) initialize(t *testing.T) {
@@ -275,7 +252,6 @@ func TestMCPServerIntegration(t *testing.T) {
 		expectedTools := []string{
 			"symbol_definition",
 			"find_references",
-			"symbol_search",
 		}
 
 		assert.Len(t, tools, len(expectedTools), "Should have exactly %d tools", len(expectedTools))
@@ -331,34 +307,6 @@ func TestMCPServerIntegration(t *testing.T) {
 		t.Logf("Symbol definition content: %v", contentStr)
 	})
 
-	t.Run("SymbolSearch", func(t *testing.T) {
-		// Test searching for symbols by searching for "Calculator"
-		req := MCPRequest{
-			JSONRPC: "2.0",
-			ID:      3.1,
-			Method:  "tools/call",
-			Params: map[string]any{
-				"name": "symbol_search",
-				"arguments": map[string]any{
-					"symbol": "Calculator",
-				},
-			},
-		}
-
-		resp := server.sendRequest(t, req)
-		assert.Nil(t, resp.Error, "Symbol search should not return an error")
-
-		// Validate that we got symbol search results
-		var result map[string]any
-		err := json.Unmarshal(resp.Result, &result)
-		assert.NoError(t, err, "Should be able to unmarshal symbol search result")
-
-		// Parse and validate the JSON response structure
-		contentStr := parseToolResult(t, result)
-		validateSymbolSearchResult(t, contentStr, "Calculator")
-
-		t.Logf("Symbol search content: %v", contentStr)
-	})
 
 	t.Run("FindReferences", func(t *testing.T) {
 		// Test find references on Calculator type in calculator.go
