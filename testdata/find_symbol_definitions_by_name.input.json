@@ -3,7 +3,7 @@
   "id": 2,
   "method": "tools/call",
   "params": {
-    "name": "symbol_definition",
+    "name": "find_symbol_definitions_by_name",
     "arguments": {
       "symbol_name": "Calculator"
     }

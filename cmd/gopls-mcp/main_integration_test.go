@@ -166,8 +166,8 @@ func parseToolResult(t *testing.T, result map[string]any) string {
 	return ""
 }
 
-// validateSymbolDefinitionResult validates the structure of a symbol definition result
-func validateSymbolDefinitionResult(t *testing.T, jsonContent string, expectedSymbol string) {
+// validateFindSymbolDefinitionsByNameResult validates the structure of a find symbol definitions by name result
+func validateFindSymbolDefinitionsByNameResult(t *testing.T, jsonContent string, expectedSymbol string) {
 	var results []results.SymbolDefinitionResult
 	err := json.Unmarshal([]byte(jsonContent), &results)
 	assert.NoError(t, err, "Should be able to unmarshal symbol definition results")
@@ -296,7 +296,7 @@ func TestMCPServerIntegration(t *testing.T) {
 		assert.True(t, ok, "Expected tools array, got %T", result["tools"])
 
 		expectedTools := []string{
-			"symbol_definition",
+			"find_symbol_definitions_by_name",
 			"symbol_references",
 			"list_symbols_in_file",
 		}
@@ -325,14 +325,14 @@ func TestMCPServerIntegration(t *testing.T) {
 		}
 	})
 
-	t.Run("SymbolDefinition", func(t *testing.T) {
+	t.Run("FindSymbolDefinitionsByName", func(t *testing.T) {
 		// Test symbol definition by searching for "NewCalculator" symbol
 		req := MCPRequest{
 			JSONRPC: "2.0",
 			ID:      3,
 			Method:  "tools/call",
 			Params: map[string]any{
-				"name": "symbol_definition",
+				"name": "find_symbol_definitions_by_name",
 				"arguments": map[string]any{
 					"symbol_name": "NewCalculator",
 				},
@@ -349,7 +349,7 @@ func TestMCPServerIntegration(t *testing.T) {
 
 		// Parse and validate the JSON response structure
 		contentStr := parseToolResult(t, result)
-		validateSymbolDefinitionResult(t, contentStr, "NewCalculator")
+		validateFindSymbolDefinitionsByNameResult(t, contentStr, "NewCalculator")
 
 		t.Logf("Symbol definition content: %v", contentStr)
 	})

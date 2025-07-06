@@ -5,7 +5,7 @@ An MCP (Model Context Protocol) server that exposes the LSP functionality of the
 ## Tools
 
 gopls-mcp provides the following tools:
-- **symbol_definition**: Find the definition of a symbol name.
+- **find_symbol_definitions_by_name**: Find the definition of a symbol by name.
 - **symbol_references**: Find all references to a symbol name.
 - **list_symbols_in_file**: Get all symbols in a Go file.
 
@@ -70,8 +70,8 @@ Example configuration:
 
 All tools return structured JSON responses for easy programmatic consumption.
 
-### symbol_definition
-Find the definition of a symbol by name.
+### find_symbol_definitions_by_name
+Find the definition of a symbol by name in Go code.
 
 **Parameters:**
 - `symbol_name` (string): Symbol name to find the definition for

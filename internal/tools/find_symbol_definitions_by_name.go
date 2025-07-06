@@ -12,31 +12,31 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-// SymbolDefinitionTool handles symbol definition requests
-type SymbolDefinitionTool struct {
+// FindSymbolDefinitionsByNameTool handles find symbol definitions by name requests
+type FindSymbolDefinitionsByNameTool struct {
 	client types.Client
 	config types.Config
 }
 
-// NewSymbolDefinitionTool creates a new symbol definition tool
-func NewSymbolDefinitionTool(client types.Client, config types.Config) *SymbolDefinitionTool {
-	return &SymbolDefinitionTool{
+// NewFindSymbolDefinitionsByNameTool creates a new find symbol definitions by name tool
+func NewFindSymbolDefinitionsByNameTool(client types.Client, config types.Config) *FindSymbolDefinitionsByNameTool {
+	return &FindSymbolDefinitionsByNameTool{
 		client: client,
 		config: config,
 	}
 }
 
 // GetTool returns the MCP tool definition
-func (t *SymbolDefinitionTool) GetTool() mcp.Tool {
-	tool := mcp.NewTool("symbol_definition",
-		mcp.WithDescription("Find the definition of a symbol in Go code"),
-		mcp.WithString("symbol_name", mcp.Required(), mcp.Description("Symbol name to find the definition for")),
+func (t *FindSymbolDefinitionsByNameTool) GetTool() mcp.Tool {
+	tool := mcp.NewTool("find_symbol_definitions_by_name",
+		mcp.WithDescription("Find the definition of a symbol by name in Go code, returning a list of symbol definitions"),
+		mcp.WithString("symbol_name", mcp.Required(), mcp.Description("Symbol name to find the definition for, with fuzzy matching")),
 	)
 	return tool
 }
 
 // Handle processes the tool request
-func (t *SymbolDefinitionTool) Handle(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (t *FindSymbolDefinitionsByNameTool) Handle(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	symbolName := mcp.ParseString(req, "symbol_name", "")
 	if symbolName == "" {
 		return mcp.NewToolResultError("symbol_name parameter is required"), nil

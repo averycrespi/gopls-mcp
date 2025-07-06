@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `make clean` - Clean build artifacts and caches
 
 ### MCP Tool Testing
-- `make test-symbol-definition` - Test symbol_definition tool with pretty-printed JSON output
+- `make test-find-symbol-definitions-by-name` - Test find_symbol_definitions_by_name tool with pretty-printed JSON output
 - `make test-symbol-references` - Test symbol_references tool with pretty-printed JSON output
 - `make test-list-symbols-in-file` - Test list_symbols_in_file tool with pretty-printed JSON output
 - Uses `scripts/test-mcp-tool.sh` for JSON extraction and formatting
@@ -51,7 +51,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 ### Key Design Patterns
 
 **Tool Registration**: Each MCP tool is implemented in its own file in `internal/tools/`:
-- `symbol_definition.go` - `symbol_definition` → LSP WorkspaceSymbol + Definition requests
+- `symbol_definition.go` - `find_symbol_definitions_by_name` → LSP WorkspaceSymbol + Definition requests
 - `symbol_references.go` - `symbol_references` → LSP WorkspaceSymbol + References requests (renamed from find_references)
 - `list_symbols_in_file.go` - `list_symbols_in_file` → LSP DocumentSymbol requests with hierarchical support
 - `utils.go` - Shared utilities for path handling and position parsing
