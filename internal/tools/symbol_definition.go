@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	definitionContextLines = 3
+	definitionContextLines = 0 // disable extra context for now
 )
 
 // SymbolDefinitionTool handles symbol definition requests
@@ -69,7 +69,6 @@ func (t *SymbolDefinitionTool) Handle(ctx context.Context, req mcp.CallToolReque
 				Character: def.Range.Start.Character + 1, // convert to 1-indexed character numbers
 			},
 		}
-
 
 		// Try to enhance with source context
 		if file, err := os.Open(UriToPath(def.URI)); err == nil {
