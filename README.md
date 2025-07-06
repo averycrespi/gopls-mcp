@@ -2,16 +2,11 @@
 
 An MCP (Model Context Protocol) server that exposes the LSP functionality of the [gopls](https://pkg.go.dev/golang.org/x/tools/gopls) language server, enabling LLMs to work with Go projects more effectively.
 
-## Overview
+## Tools
 
-gopls-mcp bridges the gap between LLMs and Go development by providing an MCP interface to gopls (the official Go language server). This allows AI assistants to perform sophisticated Go code analysis, navigation, and refactoring operations.
-
-## Features
-
-### Navigation Tools
-- **symbol_definition**: Find the definition of a symbol by name
-- **symbol_references**: Find all references to a symbol across the project
-
+gopls-mcp provides the following tools:
+- **symbol_definition**: Find the definition of a symbol name.
+- **symbol_references**: Find all references to a symbol name.
 
 ## Installation
 
