@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/averycrespi/gopls-mcp/internal/results"
 	"github.com/averycrespi/gopls-mcp/pkg/types"
@@ -53,6 +54,11 @@ func (t *SymbolReferencesTool) Handle(ctx context.Context, req mcp.CallToolReque
 
 	var symbolResults []results.SymbolReferenceResult
 	for _, sym := range symbols {
+		// Only return results for the exact symbol name, case insensitive
+		if !strings.EqualFold(sym.Name, symbolName) {
+			continue
+		}
+
 		locations, err := t.client.FindReferences(ctx, sym.Location.URI, sym.Location.Range.Start)
 		if err != nil {
 			continue
