@@ -230,28 +230,6 @@ func (c *GoplsClient) GetHoverInfo(ctx context.Context, uri string, position typ
 	return fmt.Sprintf("%v", hover.Contents), nil
 }
 
-func (c *GoplsClient) GetCompletion(ctx context.Context, uri string, position types.Position) ([]types.CompletionItem, error) {
-	params := map[string]any{
-		"textDocument": map[string]any{
-			"uri": uri,
-		},
-		"position": position,
-	}
-
-	response, err := c.transport.SendRequest("textDocument/completion", params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get completion: %w", err)
-	}
-
-	var completion struct {
-		Items []types.CompletionItem `json:"items"`
-	}
-	if err := json.Unmarshal(response, &completion); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal completion response: %w", err)
-	}
-
-	return completion.Items, nil
-}
 
 func (c *GoplsClient) FuzzyFindSymbol(ctx context.Context, query string) ([]types.SymbolInformation, error) {
 	params := map[string]any{

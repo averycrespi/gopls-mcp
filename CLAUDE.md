@@ -46,7 +46,6 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 **Tool Registration**: Each MCP tool is implemented in its own file in `internal/tools/`:
 - `symbol_definition.go` - `symbol_definition` → LSP WorkspaceSymbol + Definition requests
 - `find_references.go` - `find_references` → LSP References request
-- `get_completion.go` - `get_completion` → LSP Completion request
 - `symbol_search.go` - `symbol_search` → LSP WorkspaceSymbol request
 - `utils.go` - Shared utilities for path handling and position parsing
 

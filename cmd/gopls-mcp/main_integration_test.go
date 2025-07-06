@@ -275,7 +275,6 @@ func TestMCPServerIntegration(t *testing.T) {
 		expectedTools := []string{
 			"symbol_definition",
 			"find_references",
-			"get_completion",
 			"symbol_search",
 		}
 
@@ -400,43 +399,4 @@ func TestMCPServerIntegration(t *testing.T) {
 		t.Logf("Find references content: %v", content)
 	})
 
-	t.Run("GetCompletion", func(t *testing.T) {
-		// Test completion after "calc." in main.go
-		// We'll test at the end of line 14 after "calc."
-		// main.go line 14: result := calc.Add(5.0)
-		//                               ^
-		//                           char 20 (after the dot)
-		mainFile := filepath.Join(workspaceRoot, "main.go")
-
-		req := MCPRequest{
-			JSONRPC: "2.0",
-			ID:      6,
-			Method:  "tools/call",
-			Params: map[string]any{
-				"name": "get_completion",
-				"arguments": map[string]any{
-					"file_path": mainFile,
-					"line":      13, // Zero-based: line 14 in editor
-					"character": 20, // Zero-based: position after "calc."
-				},
-			},
-		}
-
-		resp := server.sendRequest(t, req)
-		assert.Nil(t, resp.Error, "Get completion should not return an error")
-
-		// Validate that we got completion content
-		var result map[string]any
-		err := json.Unmarshal(resp.Result, &result)
-		assert.NoError(t, err, "Should be able to unmarshal completion result")
-
-		content, ok := result["content"]
-		assert.True(t, ok, "Expected content in completion result")
-
-		// Should include completion information
-		contentStr := fmt.Sprintf("%v", content)
-		assert.Contains(t, contentStr, "completion", "Response should contain completion information")
-		assert.Contains(t, contentStr, "Add", "Completion should include Calculator.Add method")
-		t.Logf("Get completion content: %v", content)
-	})
 }

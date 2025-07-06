@@ -13,8 +13,6 @@ gopls-mcp bridges the gap between LLMs and Go development by providing an MCP in
 - **find_references**: Find all references to a symbol across the project
 - **symbol_search**: Search for symbols by name across the workspace
 
-### Code Analysis Tools
-- **get_completion**: Get code completion suggestions at any position
 
 ## Installation
 
@@ -107,13 +105,6 @@ Find all references to a symbol.
 - `line` (number): Line number (0-based)
 - `character` (number): Character position (0-based)
 
-### get_completion
-Get code completion suggestions.
-
-**Parameters:**
-- `file_path` (string): Path to the Go file
-- `line` (number): Line number (0-based)
-- `character` (number): Character position (0-based)
 
 ## Architecture
 

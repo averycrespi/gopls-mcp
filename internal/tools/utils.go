@@ -15,7 +15,6 @@ import (
 // Tool names
 const (
 	ToolFindReferences = "find_references"
-	ToolGetCompletion  = "get_completion"
 )
 
 // PathToUri converts a file path to a file URI

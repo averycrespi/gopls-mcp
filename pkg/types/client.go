@@ -12,7 +12,6 @@ type Client interface {
 	GoToDefinition(ctx context.Context, uri string, position Position) ([]Location, error)
 	FindReferences(ctx context.Context, uri string, position Position) ([]Location, error)
 	GetHoverInfo(ctx context.Context, uri string, position Position) (string, error)
-	GetCompletion(ctx context.Context, uri string, position Position) ([]CompletionItem, error)
 	FuzzyFindSymbol(ctx context.Context, query string) ([]SymbolInformation, error)
 }
 
@@ -49,9 +48,3 @@ type Diagnostic struct {
 	Source   string `json:"source,omitempty"`
 }
 
-// CompletionItem represents a completion item
-type CompletionItem struct {
-	Label  string `json:"label"`
-	Kind   int    `json:"kind"`
-	Detail string `json:"detail,omitempty"`
-}
