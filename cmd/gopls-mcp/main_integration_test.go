@@ -196,8 +196,7 @@ func TestMCPServerIntegration(t *testing.T) {
 			"find_references",
 			"hover_info",
 			"get_completion",
-			"format_code",
-			"rename_symbol",
+			"find_symbol",
 		}
 
 		assert.Len(t, tools, len(expectedTools), "Should have exactly %d tools", len(expectedTools))
@@ -225,12 +224,7 @@ func TestMCPServerIntegration(t *testing.T) {
 	})
 
 	t.Run("GoToDefinition", func(t *testing.T) {
-		// Test go to definition on "NewCalculator" function call in main.go
-		// main.go line 9: calc := NewCalculator(10.0)
-		//                        ^
-		//                     char 11 (0-based)
-		mainFile := filepath.Join(workspaceRoot, "main.go")
-
+		// Test go to definition by searching for "NewCalculator" symbol
 		req := MCPRequest{
 			JSONRPC: "2.0",
 			ID:      3,
@@ -238,9 +232,7 @@ func TestMCPServerIntegration(t *testing.T) {
 			Params: map[string]any{
 				"name": "go_to_definition",
 				"arguments": map[string]any{
-					"file_path": mainFile,
-					"line":      8,  // Zero-based: line 9 in editor
-					"character": 11, // Zero-based: position of "NewCalculator"
+					"symbol": "NewCalculator",
 				},
 			},
 		}
@@ -258,8 +250,41 @@ func TestMCPServerIntegration(t *testing.T) {
 
 		// Should contain definition information
 		contentStr := fmt.Sprintf("%v", content)
-		assert.Contains(t, contentStr, "definition", "Response should contain definition information")
+		assert.Contains(t, contentStr, "NewCalculator", "Response should contain NewCalculator symbol")
+		assert.Contains(t, contentStr, "Definition:", "Response should contain definition information")
 		t.Logf("Go to definition content: %v", content)
+	})
+
+	t.Run("FindSymbol", func(t *testing.T) {
+		// Test finding symbols by searching for "Calculator"
+		req := MCPRequest{
+			JSONRPC: "2.0",
+			ID:      3.1,
+			Method:  "tools/call",
+			Params: map[string]any{
+				"name": "find_symbol",
+				"arguments": map[string]any{
+					"query": "Calculator",
+				},
+			},
+		}
+
+		resp := server.sendRequest(t, req)
+		assert.Nil(t, resp.Error, "Find symbol should not return an error")
+
+		// Validate that we got symbol search results
+		var result map[string]any
+		err := json.Unmarshal(resp.Result, &result)
+		assert.NoError(t, err, "Should be able to unmarshal find symbol result")
+
+		content, ok := result["content"]
+		assert.True(t, ok, "Expected content in find symbol result")
+
+		// Should contain symbol information
+		contentStr := fmt.Sprintf("%v", content)
+		assert.Contains(t, contentStr, "Calculator", "Response should contain Calculator symbol")
+		assert.Contains(t, contentStr, "symbol(s) matching", "Response should indicate found symbols")
+		t.Logf("Find symbol content: %v", content)
 	})
 
 	t.Run("HoverInfo", func(t *testing.T) {
