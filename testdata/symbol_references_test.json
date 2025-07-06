@@ -1,0 +1,11 @@
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "symbol_references",
+    "arguments": {
+      "symbol_name": "Calculator"
+    }
+  }
+}
