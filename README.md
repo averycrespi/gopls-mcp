@@ -57,15 +57,13 @@ make build
 
 ### Command Line Options
 ```bash
-./bin/gopls-mcp [options]
+./bin/gopls-mcp [flags]
 
-Options:
-  -gopls-path string
-        Path to the gopls binary (default "gopls")
-  -workspace-root string
-        Root directory of the Go workspace (default ".")
-  -log-level string
-        Log level (debug, info, warn, error) (default "info")
+Flags:
+      --gopls-path string       Path to the gopls binary (default "gopls")
+      --log-level string        Log level (debug, info, warn, error) (default "info")
+      --workspace-root string   Root directory of the Go workspace (default ".")
+  -h, --help                    help for gopls-mcp
 ```
 
 ### MCP Client Integration
