@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/averycrespi/gopls-mcp/internal/results"
 	"github.com/averycrespi/gopls-mcp/pkg/types"
@@ -42,23 +43,47 @@ func (t *FindSymbolReferencesByAnchorTool) GetTool() mcp.Tool {
 func (t *FindSymbolReferencesByAnchorTool) Handle(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	anchorStr := mcp.ParseString(req, "symbol_anchor", "")
 	if anchorStr == "" {
+		slog.Debug("MCP tool called with missing symbol_anchor parameter", "tool", "find_symbol_references_by_anchor")
 		return mcp.NewToolResultError("symbol_anchor parameter is required"), nil
 	}
+
+	slog.Debug("MCP tool called", "tool", "find_symbol_references_by_anchor", "symbol_anchor", anchorStr)
 
 	// Parse and validate the anchor
 	anchor := results.SymbolAnchor(anchorStr)
 	file, position, err := anchor.ToFilePosition()
 	if err != nil {
+		slog.Debug("Invalid anchor format",
+			"tool", "find_symbol_references_by_anchor",
+			"symbol_anchor", anchorStr,
+			"error", err)
 		return mcp.NewToolResultError(fmt.Sprintf("Invalid anchor format: %v", err)), nil
 	}
+
+	slog.Debug("Parsed symbol anchor",
+		"tool", "find_symbol_references_by_anchor",
+		"symbol_anchor", anchorStr,
+		"file", file,
+		"line", position.Line,
+		"character", position.Character)
 
 	uri := PathToUri(file, t.config.WorkspaceRoot)
 	refLocations, err := t.client.FindReferences(ctx, uri, position)
 	if err != nil {
+		slog.Error("Failed to find references",
+			"tool", "find_symbol_references_by_anchor",
+			"symbol_anchor", anchorStr,
+			"uri", uri,
+			"error", err)
 		return mcp.NewToolResultError(
 			fmt.Sprintf("Failed to find references for anchor %s: %v", anchorStr, err),
 		), nil
 	}
+
+	slog.Debug("Found references from LSP",
+		"tool", "find_symbol_references_by_anchor",
+		"symbol_anchor", anchorStr,
+		"reference_count", len(refLocations))
 
 	toolResult := results.FindSymbolReferencesByAnchorToolResult{
 		Arguments: results.FindSymbolReferencesByAnchorToolArgs{
@@ -83,14 +108,30 @@ func (t *FindSymbolReferencesByAnchorTool) Handle(ctx context.Context, req mcp.C
 		toolResult.Message = "No references found for the symbol anchor. " +
 			"This could mean that the symbol has no references, or that your symbol anchor is out of date. " +
 			"You can try getting a fresh symbol anchor from another tool."
+		slog.Debug("No references found",
+			"tool", "find_symbol_references_by_anchor",
+			"symbol_anchor", anchorStr)
 	} else {
 		toolResult.Message = fmt.Sprintf("Found %d references for the symbol anchor.", len(toolResult.References))
+		slog.Debug("Found symbol references",
+			"tool", "find_symbol_references_by_anchor",
+			"symbol_anchor", anchorStr,
+			"reference_count", len(toolResult.References))
 	}
 
 	jsonBytes, err := json.MarshalIndent(toolResult, "", "  ")
 	if err != nil {
+		slog.Error("Failed to marshal tool result",
+			"tool", "find_symbol_references_by_anchor",
+			"symbol_anchor", anchorStr,
+			"error", err)
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal tool result into JSON: %v", err)), nil
 	}
+
+	slog.Debug("MCP tool completed successfully",
+		"tool", "find_symbol_references_by_anchor",
+		"symbol_anchor", anchorStr,
+		"reference_count", len(toolResult.References))
 
 	return mcp.NewToolResultText(string(jsonBytes)), nil
 }

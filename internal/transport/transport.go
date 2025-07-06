@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -39,12 +39,14 @@ func NewJsonRpcTransport(writer io.Writer, reader io.Reader) *JsonRpcTransport {
 }
 
 func (t *JsonRpcTransport) Start() error {
+	slog.Debug("Starting JSON-RPC transport")
 	go t.readResponses()
 	return nil
 }
 
 func (t *JsonRpcTransport) Stop() error {
 	if !t.isClosed() {
+		slog.Debug("Stopping JSON-RPC transport")
 		close(t.done)
 	}
 	return nil
@@ -60,6 +62,8 @@ func (t *JsonRpcTransport) isClosed() bool {
 }
 
 func (t *JsonRpcTransport) readResponses() {
+	slog.Debug("Reading JSON-RPC responses")
+
 	defer func() {
 		_ = t.Stop()
 	}()
@@ -77,7 +81,7 @@ func (t *JsonRpcTransport) readResponses() {
 			// Read one byte at a time until we find the end of the header
 			b := make([]byte, 1)
 			if _, err := t.reader.Read(b); err != nil {
-				log.Println("failed to read JSON-RPC response header", err)
+				slog.Error("Failed to read JSON-RPC response header", "error", err)
 				return
 			}
 			header = append(header, b[0])
@@ -86,7 +90,7 @@ func (t *JsonRpcTransport) readResponses() {
 			if len(header) >= 4 && string(header[len(header)-4:]) == "\r\n\r\n" {
 				headerStr := string(header)
 				if _, err := fmt.Sscanf(headerStr, "Content-Length: %d\r\n\r\n", &contentLength); err != nil {
-					log.Println("failed to scan JSON-RPC response header", err)
+					slog.Error("Failed to scan JSON-RPC response header", "error", err, "header", headerStr)
 					continue
 				}
 				break
@@ -96,7 +100,7 @@ func (t *JsonRpcTransport) readResponses() {
 		// Use the Content-Length to read the JSON response body
 		body := make([]byte, contentLength)
 		if _, err := io.ReadFull(t.reader, body); err != nil {
-			log.Println("failed to read JSON-RPC response body", err)
+			slog.Error("Failed to read JSON-RPC response body", "error", err, "content_length", contentLength)
 			return
 		}
 		t.handleResponse(body)
@@ -110,7 +114,7 @@ func (t *JsonRpcTransport) handleResponse(content []byte) {
 		Error  json.RawMessage `json:"error"`
 	}
 	if err := json.Unmarshal(content, &resp); err != nil {
-		log.Println("failed to unmarshal JSON-RPC response", err)
+		slog.Error("Failed to unmarshal JSON-RPC response", "error", err, "content", string(content))
 		return
 	}
 
@@ -120,7 +124,7 @@ func (t *JsonRpcTransport) handleResponse(content []byte) {
 
 	var id int64
 	if err := json.Unmarshal(resp.ID, &id); err != nil {
-		log.Println("failed to unmarshal JSON-RPC response ID", err)
+		slog.Error("Failed to unmarshal JSON-RPC response ID", "error", err, "raw_id", string(resp.ID))
 		return
 	}
 
@@ -144,6 +148,9 @@ func (t *JsonRpcTransport) SendRequest(method string, params any) (json.RawMessa
 	}
 
 	id := atomic.AddInt64(&t.requestID, 1)
+	startTime := time.Now()
+
+	slog.Debug("Sending JSON-RPC request", "request_id", id, "method", method)
 
 	request := map[string]any{
 		"jsonrpc": "2.0",
@@ -174,8 +181,19 @@ func (t *JsonRpcTransport) SendRequest(method string, params any) (json.RawMessa
 
 	select {
 	case response := <-ch:
+		duration := time.Since(startTime)
+		slog.Debug("Received JSON-RPC response",
+			"request_id", id,
+			"method", method,
+			"duration_ms", duration.Milliseconds())
 		return response, nil
 	case <-time.After(receiveTimeout):
+		duration := time.Since(startTime)
+		slog.Error("Timeout waiting for JSON-RPC response",
+			"request_id", id,
+			"method", method,
+			"timeout_ms", receiveTimeout.Milliseconds(),
+			"duration_ms", duration.Milliseconds())
 		return nil, fmt.Errorf("timeout waiting for response to method %s", method)
 	}
 }
@@ -185,6 +203,8 @@ func (t *JsonRpcTransport) SendNotification(method string, params any) error {
 	if t.isClosed() {
 		return fmt.Errorf("cannot send notification: transport is closed")
 	}
+
+	slog.Debug("Sending JSON-RPC notification", "method", method)
 
 	notification := map[string]any{
 		"jsonrpc": "2.0",

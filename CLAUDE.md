@@ -25,8 +25,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Running the Server
 - `make run WORKSPACE=/path/to/go/project` - Run with specific workspace
-- `go run ./cmd/gopls-mcp -workspace-root /path/to/project` - Direct run
+- `go run ./cmd/gopls-mcp --workspace-root /path/to/project` - Direct run
+- `go run ./cmd/gopls-mcp --workspace-root /path/to/project --log-level debug` - Run with debug logging
 - `go run github.com/averycrespi/gopls-mcp@latest` - Run latest version
+
+### Debugging and Logging
+- `--log-level debug` - Enable detailed execution tracing with timing and context
+- `--log-level info` - Show high-level operational messages (default)
+- `--log-level error` - Only show critical errors
+- All logs are structured JSON output to stderr for programmatic parsing
 
 ## Architecture
 
@@ -74,7 +81,15 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 
 **Path Handling**: All file paths are converted to absolute paths and file:// URIs for LSP communication.
 
-**Error Handling**: LSP errors are wrapped and returned as MCP tool result errors with improved logging and specific error messages.
+**Error Handling**: LSP errors are wrapped and returned as MCP tool result errors with structured logging and specific error messages.
+
+**Structured Logging**: The codebase uses Go's built-in `slog` package for comprehensive logging:
+- **JSON format**: All logs are structured JSON sent to stderr for easy parsing
+- **Configurable levels**: debug, info, warn, error controlled by `--log-level` flag
+- **Contextual information**: Request IDs, timing, file paths, symbol counts, error details
+- **Performance metrics**: JSON-RPC request/response timing, gopls process tracking
+- **Debug tracing**: Tool execution workflows, LSP method calls, parameter validation
+- **Source locations**: File/line information included in debug mode for troubleshooting
 
 **JSON Output**: All symbol tools return standardized JSON responses with:
 - **Consistent Structure**: `message`, `arguments`, and tool-specific results (`definitions`, `references`, `file_symbols`)
@@ -117,3 +132,23 @@ claude mcp add gopls-mcp go run github.com/averycrespi/gopls-mcp@latest
 3. `golangci-lint run` - Lint Go code for potential issues
 
 These commands must be run before committing changes to ensure the codebase remains stable and follows Go best practices.
+
+### Debugging Development Issues
+
+**Using Structured Logging for Development:**
+- Use `--log-level debug` when developing or troubleshooting
+- Debug logs include source file locations, timing, and detailed context
+- JSON-RPC communication is fully logged with request IDs for correlation
+- Tool execution shows parameter parsing, LSP interactions, and result processing
+
+**Common Debugging Scenarios:**
+- **Tool failures**: Check parameter validation and LSP method calls in debug logs
+- **Performance issues**: Monitor request timing and symbol counts
+- **LSP communication problems**: Review JSON-RPC request/response sequences
+- **Symbol resolution**: Trace workspace symbol searches and definition lookups
+
+**Logging Integration:**
+- All components use `slog.Debug()`, `slog.Info()`, `slog.Error()` with structured fields
+- Avoid redundant error logging where errors are already returned and handled
+- Include relevant context (file paths, symbol names, request IDs) in log messages
+- Use consistent field names across components for easier log analysis

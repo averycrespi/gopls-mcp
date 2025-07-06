@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/averycrespi/gopls-mcp/internal/results"
 	"github.com/averycrespi/gopls-mcp/pkg/types"
@@ -38,15 +39,27 @@ func (t *FindSymbolDefinitionsByNameTool) GetTool() mcp.Tool {
 func (t *FindSymbolDefinitionsByNameTool) Handle(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	symbolName := mcp.ParseString(req, "symbol_name", "")
 	if symbolName == "" {
+		slog.Debug("MCP tool called with missing symbol_name parameter", "tool", "find_symbol_definitions_by_name")
 		return mcp.NewToolResultError("symbol_name parameter is required"), nil
 	}
 
+	slog.Debug("MCP tool called", "tool", "find_symbol_definitions_by_name", "symbol_name", symbolName)
+
 	symbols, err := t.client.FuzzyFindSymbol(ctx, symbolName)
 	if err != nil {
+		slog.Error("Failed to search workspace symbols",
+			"tool", "find_symbol_definitions_by_name",
+			"symbol_name", symbolName,
+			"error", err)
 		return mcp.NewToolResultError(
 			fmt.Sprintf("Failed to search Go workspace symbols for symbol name: %s: %v", symbolName, err),
 		), nil
 	}
+
+	slog.Debug("Found workspace symbols",
+		"tool", "find_symbol_definitions_by_name",
+		"symbol_name", symbolName,
+		"symbol_count", len(symbols))
 
 	toolResult := results.FindSymbolDefinitionsByNameToolResult{
 		Arguments: results.FindSymbolDefinitionByNameToolArgs{
@@ -86,14 +99,30 @@ func (t *FindSymbolDefinitionsByNameTool) Handle(ctx context.Context, req mcp.Ca
 	if len(toolResult.Definitions) == 0 {
 		toolResult.Message = "No symbol definitions found in the Go workspace. " +
 			"This could mean that the symbol name is incorrect, or that the symbol is not defined in the workspace."
+		slog.Debug("No definitions found",
+			"tool", "find_symbol_definitions_by_name",
+			"symbol_name", symbolName)
 	} else {
 		toolResult.Message = fmt.Sprintf("Found %d symbol definitions in the Go workspace.", len(toolResult.Definitions))
+		slog.Debug("Found symbol definitions",
+			"tool", "find_symbol_definitions_by_name",
+			"symbol_name", symbolName,
+			"definition_count", len(toolResult.Definitions))
 	}
 
 	jsonBytes, err := json.MarshalIndent(toolResult, "", "  ")
 	if err != nil {
+		slog.Error("Failed to marshal tool result",
+			"tool", "find_symbol_definitions_by_name",
+			"symbol_name", symbolName,
+			"error", err)
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal tool result into JSON: %v", err)), nil
 	}
+
+	slog.Debug("MCP tool completed successfully",
+		"tool", "find_symbol_definitions_by_name",
+		"symbol_name", symbolName,
+		"definition_count", len(toolResult.Definitions))
 
 	return mcp.NewToolResultText(string(jsonBytes)), nil
 }

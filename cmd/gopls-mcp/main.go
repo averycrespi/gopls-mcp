@@ -2,9 +2,10 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -31,6 +32,9 @@ The server provides tools for:
 
 All tools return structured JSON responses with precise location information.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Configure structured logging first
+		configureLogging(logLevel)
+
 		config := types.Config{
 			GoplsPath:     goplsPath,
 			WorkspaceRoot: workspaceRoot,
@@ -39,7 +43,8 @@ All tools return structured JSON responses with precise location information.`,
 
 		// Ensure the workspace root is a valid directory
 		if stat, err := os.Stat(config.WorkspaceRoot); err != nil || !stat.IsDir() {
-			log.Fatalf("Invalid workspace root: %s", config.WorkspaceRoot)
+			slog.Error("Invalid workspace root", "path", config.WorkspaceRoot, "error", err)
+			os.Exit(1)
 		}
 
 		// Ensure the workspace root is an absolute path
@@ -48,9 +53,14 @@ All tools return structured JSON responses with precise location information.`,
 		}
 
 		srv := server.NewGoplsServer(config)
-		log.Printf("Serving Gopls MCP server with config: %+v", config)
+		slog.Info("Starting Gopls MCP server",
+			"gopls_path", config.GoplsPath,
+			"workspace_root", config.WorkspaceRoot,
+			"log_level", config.LogLevel)
+
 		if err := srv.Serve(context.Background()); err != nil {
-			log.Fatalf("Failed to serve Gopls MCP server: %v", err)
+			slog.Error("Failed to serve Gopls MCP server", "error", err)
+			os.Exit(1)
 		}
 
 		return nil
@@ -63,8 +73,39 @@ func init() {
 	rootCmd.Flags().StringVar(&logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 }
 
+// configureLogging sets up structured logging with the specified log level
+func configureLogging(level string) {
+	var logLevelVar slog.Level
+
+	switch strings.ToLower(level) {
+	case "debug":
+		logLevelVar = slog.LevelDebug
+	case "info":
+		logLevelVar = slog.LevelInfo
+	case "warn", "warning":
+		logLevelVar = slog.LevelWarn
+	case "error":
+		logLevelVar = slog.LevelError
+	default:
+		logLevelVar = slog.LevelInfo
+	}
+
+	// Create a JSON handler for structured logging
+	opts := &slog.HandlerOptions{
+		Level:     logLevelVar,
+		AddSource: logLevelVar == slog.LevelDebug, // Add source info for debug level
+	}
+
+	handler := slog.NewJSONHandler(os.Stderr, opts)
+	logger := slog.New(handler)
+
+	// Set as the default logger
+	slog.SetDefault(logger)
+}
+
 func main() {
 	if err := rootCmd.Execute(); err != nil {
-		log.Fatalf("Error executing command: %v", err)
+		slog.Error("Error executing command", "error", err)
+		os.Exit(1)
 	}
 }

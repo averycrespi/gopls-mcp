@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/averycrespi/gopls-mcp/internal/results"
 	"github.com/averycrespi/gopls-mcp/pkg/types"
@@ -38,16 +39,34 @@ func (t *ListSymbolsInFileTool) GetTool() mcp.Tool {
 func (t *ListSymbolsInFileTool) Handle(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	filePath := mcp.ParseString(req, "file_path", "")
 	if filePath == "" {
+		slog.Debug("MCP tool called with missing file_path parameter", "tool", "list_symbols_in_file")
 		return mcp.NewToolResultError("file_path parameter is required"), nil
 	}
 
+	slog.Debug("MCP tool called", "tool", "list_symbols_in_file", "file_path", filePath)
+
 	uri := PathToUri(filePath, t.config.WorkspaceRoot)
+	slog.Debug("Converted file path to URI",
+		"tool", "list_symbols_in_file",
+		"file_path", filePath,
+		"uri", uri)
+
 	documentSymbols, err := t.client.GetDocumentSymbols(ctx, uri)
 	if err != nil {
+		slog.Error("Failed to get document symbols",
+			"tool", "list_symbols_in_file",
+			"file_path", filePath,
+			"uri", uri,
+			"error", err)
 		return mcp.NewToolResultError(
 			fmt.Sprintf("Failed to get document symbols for file: %s: %v", filePath, err),
 		), nil
 	}
+
+	slog.Debug("Found document symbols from LSP",
+		"tool", "list_symbols_in_file",
+		"file_path", filePath,
+		"symbol_count", len(documentSymbols))
 
 	toolResult := results.ListSymbolsInFileToolResult{
 		Arguments: results.ListSymbolsInFileToolArgs{
@@ -62,14 +81,30 @@ func (t *ListSymbolsInFileTool) Handle(ctx context.Context, req mcp.CallToolRequ
 	if len(toolResult.FileSymbols) == 0 {
 		toolResult.Message = "No symbols found in file. " +
 			"This could mean that the file is missing, empty, or not a Go file."
+		slog.Debug("No symbols found in file",
+			"tool", "list_symbols_in_file",
+			"file_path", filePath)
 	} else {
 		toolResult.Message = fmt.Sprintf("Found %d symbols in file.", len(toolResult.FileSymbols))
+		slog.Debug("Found file symbols",
+			"tool", "list_symbols_in_file",
+			"file_path", filePath,
+			"symbol_count", len(toolResult.FileSymbols))
 	}
 
 	jsonBytes, err := json.MarshalIndent(toolResult, "", "  ")
 	if err != nil {
+		slog.Error("Failed to marshal tool result",
+			"tool", "list_symbols_in_file",
+			"file_path", filePath,
+			"error", err)
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal tool result JSON: %v", err)), nil
 	}
+
+	slog.Debug("MCP tool completed successfully",
+		"tool", "list_symbols_in_file",
+		"file_path", filePath,
+		"symbol_count", len(toolResult.FileSymbols))
 
 	return mcp.NewToolResultText(string(jsonBytes)), nil
 }

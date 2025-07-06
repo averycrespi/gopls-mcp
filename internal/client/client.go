@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"os/exec"
 
 	"github.com/averycrespi/gopls-mcp/internal/transport"
@@ -32,6 +33,8 @@ func NewGoplsClient(goplsPath string) *GoplsClient {
 		goplsPath = defaultGoplsPath
 	}
 
+	slog.Debug("Creating new Gopls client", "gopls_path", goplsPath)
+
 	return &GoplsClient{
 		goplsPath: goplsPath,
 	}
@@ -39,6 +42,8 @@ func NewGoplsClient(goplsPath string) *GoplsClient {
 
 // Start starts the Gopls client
 func (c *GoplsClient) Start(ctx context.Context, workspaceRoot string) error {
+	slog.Debug("Starting Gopls client", "gopls_path", c.goplsPath, "workspace_root", workspaceRoot)
+
 	c.cmd = exec.CommandContext(ctx, c.goplsPath, "serve")
 
 	stdin, err := c.cmd.StdinPipe()
@@ -62,15 +67,19 @@ func (c *GoplsClient) Start(ctx context.Context, workspaceRoot string) error {
 	if err := c.cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start gopls command: %w", err)
 	}
+	slog.Debug("Gopls process started successfully", "pid", c.cmd.Process.Pid)
 
 	if err := c.transport.Start(); err != nil {
 		return fmt.Errorf("failed to start transport: %w", err)
 	}
+	slog.Debug("JSON-RPC transport started successfully")
 
 	rootURI := "file://" + workspaceRoot
+	slog.Debug("Initializing Gopls client", "root_uri", rootURI)
 	if err := c.initialize(rootURI); err != nil {
 		return fmt.Errorf("failed to initialize Gopls client: %w", err)
 	}
+	slog.Debug("Gopls client initialized successfully")
 
 	return nil
 }
@@ -131,6 +140,8 @@ func (c *GoplsClient) Stop(ctx context.Context) error {
 }
 
 func (c *GoplsClient) GoToDefinition(ctx context.Context, uri string, position types.Position) ([]types.Location, error) {
+	slog.Debug("Getting symbol definition", "uri", uri, "line", position.Line, "character", position.Character)
+
 	params := map[string]any{
 		"textDocument": map[string]any{
 			"uri": uri,
@@ -151,6 +162,7 @@ func (c *GoplsClient) GoToDefinition(ctx context.Context, uri string, position t
 
 	// Handle null response
 	if string(rawResponse) == "null" {
+		slog.Debug("No definitions found", "uri", uri)
 		return []types.Location{}, nil
 	}
 
@@ -165,10 +177,13 @@ func (c *GoplsClient) GoToDefinition(ctx context.Context, uri string, position t
 		locations = []types.Location{location}
 	}
 
+	slog.Debug("Found symbol definitions", "count", len(locations), "uri", uri)
 	return locations, nil
 }
 
 func (c *GoplsClient) FindReferences(ctx context.Context, uri string, position types.Position) ([]types.Location, error) {
+	slog.Debug("Finding symbol references", "uri", uri, "line", position.Line, "character", position.Character)
+
 	params := map[string]any{
 		"textDocument": map[string]any{
 			"uri": uri,
@@ -192,6 +207,7 @@ func (c *GoplsClient) FindReferences(ctx context.Context, uri string, position t
 
 	// Handle null response
 	if string(rawResponse) == "null" {
+		slog.Debug("No references found", "uri", uri)
 		return []types.Location{}, nil
 	}
 
@@ -200,6 +216,7 @@ func (c *GoplsClient) FindReferences(ctx context.Context, uri string, position t
 		return nil, fmt.Errorf("failed to unmarshal references response: %w", err)
 	}
 
+	slog.Debug("Found symbol references", "count", len(locations), "uri", uri)
 	return locations, nil
 }
 
@@ -237,6 +254,8 @@ func (c *GoplsClient) GetHoverInfo(ctx context.Context, uri string, position typ
 }
 
 func (c *GoplsClient) FuzzyFindSymbol(ctx context.Context, query string) ([]types.SymbolInformation, error) {
+	slog.Debug("Fuzzy finding symbols", "query", query)
+
 	params := map[string]any{
 		"query": query,
 	}
@@ -254,6 +273,7 @@ func (c *GoplsClient) FuzzyFindSymbol(ctx context.Context, query string) ([]type
 
 	// Handle null response
 	if string(rawResponse) == "null" {
+		slog.Debug("No symbols found", "query", query)
 		return []types.SymbolInformation{}, nil
 	}
 
@@ -262,6 +282,7 @@ func (c *GoplsClient) FuzzyFindSymbol(ctx context.Context, query string) ([]type
 		return nil, fmt.Errorf("failed to unmarshal workspace symbol response: %w", err)
 	}
 
+	slog.Debug("Found symbols", "count", len(symbols), "query", query)
 	return symbols, nil
 }
 
@@ -314,6 +335,8 @@ func (c *GoplsClient) RenameSymbol(ctx context.Context, uri string, position typ
 }
 
 func (c *GoplsClient) GetDocumentSymbols(ctx context.Context, uri string) ([]types.DocumentSymbol, error) {
+	slog.Debug("Getting document symbols", "uri", uri)
+
 	params := map[string]any{
 		"textDocument": map[string]any{
 			"uri": uri,
@@ -333,6 +356,7 @@ func (c *GoplsClient) GetDocumentSymbols(ctx context.Context, uri string) ([]typ
 
 	// Handle null response
 	if string(rawResponse) == "null" {
+		slog.Debug("No document symbols found", "uri", uri)
 		return []types.DocumentSymbol{}, nil
 	}
 
@@ -355,6 +379,9 @@ func (c *GoplsClient) GetDocumentSymbols(ctx context.Context, uri string) ([]typ
 				SelectionRange: info.Location.Range,
 			}
 		}
+		slog.Debug("Found document symbols (flat format)", "count", len(symbols), "uri", uri)
+	} else {
+		slog.Debug("Found document symbols (hierarchical format)", "count", len(symbols), "uri", uri)
 	}
 
 	return symbols, nil
