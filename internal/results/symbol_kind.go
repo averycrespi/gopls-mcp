@@ -30,7 +30,9 @@ const (
 	SymbolKindEvent         SymbolKind = "event"
 	SymbolKindOperator      SymbolKind = "operator"
 	SymbolKindTypeParameter SymbolKind = "type_parameter"
-	SymbolKindUnknown       SymbolKind = "unknown"
+
+	// This isn't a valid symbol kind, but it's used to indicate that the symbol kind is unknown
+	SymbolKindUnknown SymbolKind = "unknown"
 )
 
 // See: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#symbolKind
@@ -61,7 +63,6 @@ var symbolKindMap = map[int]SymbolKind{
 	24: SymbolKindEvent,
 	25: SymbolKindOperator,
 	26: SymbolKindTypeParameter,
-	27: SymbolKindUnknown,
 }
 
 // NewSymbolKind returns the SymbolKind for a given LSP symbol kind

@@ -40,10 +40,12 @@ func NewSourceContext(contextStr string, highlightLine int) *SourceContext {
 				content = parts[1]
 			}
 		} else {
-			// Format: "    11: content"
+			// Format: "    11: content" - parse more flexibly
 			parts := strings.SplitN(line, ": ", 2)
 			if len(parts) >= 2 {
-				fmt.Sscanf(parts[0], "    %d", &lineNumber)
+				// Extract just the number part by trimming whitespace
+				numberPart := strings.TrimSpace(parts[0])
+				fmt.Sscanf(numberPart, "%d", &lineNumber)
 				content = parts[1]
 			}
 		}
