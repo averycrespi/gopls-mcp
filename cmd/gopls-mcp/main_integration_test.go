@@ -52,7 +52,7 @@ type MCPServerProcess struct {
 
 // startMCPServer starts the MCP server process
 func startMCPServer(t *testing.T, workspaceRoot string) *MCPServerProcess {
-	cmd := exec.Command("go", "run", "main.go", "-workspace-root", workspaceRoot, "-log-level", "debug")
+	cmd := exec.Command("go", "run", "main.go", "--workspace-root", workspaceRoot, "--log-level", "debug")
 
 	stdin, err := cmd.StdinPipe()
 	assert.NoError(t, err, "Failed to create stdin pipe")
