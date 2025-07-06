@@ -2,11 +2,11 @@ package tools
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/averycrespi/gopls-mcp/internal/results"
 	"github.com/averycrespi/gopls-mcp/pkg/types"
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -88,8 +88,8 @@ func readSourceLines(filePath string, startLine, endLine int) ([]string, error) 
 	return lines, nil
 }
 
-// getSymbolContext reads source code around a symbol location
-func getSymbolContext(uri string, startLine, startChar int, contextLines int) (string, error) {
+// getSymbolContext reads source code around a symbol location and returns structured SourceContext
+func getSymbolContext(uri string, startLine, startChar int, contextLines int) (*results.SourceContext, error) {
 	filePath := uriToPath(uri)
 
 	// Read lines around the symbol (with context)
@@ -101,19 +101,21 @@ func getSymbolContext(uri string, startLine, startChar int, contextLines int) (s
 
 	lines, err := readSourceLines(filePath, contextStart, contextEnd)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	// Format with line numbers and highlight the target line
-	var result strings.Builder
+	// Create structured source lines with highlighting
+	sourceLines := make([]results.SourceLine, 0, len(lines))
 	for i, line := range lines {
 		lineNum := contextStart + i + 1 // 1-based line numbers
-		if contextStart+i == startLine {
-			result.WriteString(fmt.Sprintf(">>> %d: %s\n", lineNum, line))
-		} else {
-			result.WriteString(fmt.Sprintf("    %d: %s\n", lineNum, line))
-		}
+		isHighlight := contextStart+i == startLine
+
+		sourceLines = append(sourceLines, results.SourceLine{
+			Number:    lineNum,
+			Content:   line,
+			Highlight: isHighlight,
+		})
 	}
 
-	return result.String(), nil
+	return &results.SourceContext{Lines: sourceLines}, nil
 }

@@ -79,8 +79,8 @@ func (t *SymbolSearchTool) Handle(ctx context.Context, req mcp.CallToolRequest) 
 		}
 
 		// Try to enhance the result with source context
-		if contextStr, err := getSymbolContext(sym.Location.URI, sym.Location.Range.Start.Line, sym.Location.Range.Start.Character, 2); err == nil {
-			entry.Source = results.NewSourceContext(contextStr, sym.Location.Range.Start.Line)
+		if sourceContext, err := getSymbolContext(sym.Location.URI, sym.Location.Range.Start.Line, sym.Location.Range.Start.Character, 2); err == nil {
+			entry.Source = sourceContext
 		}
 
 		result.Symbols = append(result.Symbols, entry)

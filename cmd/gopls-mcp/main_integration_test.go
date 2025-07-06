@@ -315,7 +315,7 @@ func TestMCPServerIntegration(t *testing.T) {
 		contentStr := fmt.Sprintf("%v", content)
 		expectedElements := getExpectedSymbolDefinitionResponse()
 		validateResponseStructure(t, contentStr, expectedElements)
-		
+
 		t.Logf("Symbol definition content: %v", content)
 	})
 
@@ -348,7 +348,7 @@ func TestMCPServerIntegration(t *testing.T) {
 		contentStr := fmt.Sprintf("%v", content)
 		expectedElements := getExpectedSymbolSearchResponse()
 		validateResponseStructure(t, contentStr, expectedElements)
-		
+
 		t.Logf("Symbol search content: %v", content)
 	})
 
