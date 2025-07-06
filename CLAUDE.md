@@ -69,6 +69,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 
 **JSON Output**: All symbol tools return structured JSON responses with:
 - Type-safe SymbolKind enums (function, struct, method, etc.)
+- Rich metadata including documentation from hover info
 - Source code context with line numbers and highlighting
 - Relative file paths from workspace root
 

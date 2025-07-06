@@ -84,6 +84,11 @@ func (t *SymbolReferencesTool) Handle(ctx context.Context, req mcp.CallToolReque
 			References: references,
 		}
 
+		// Try to enhance with hover information
+		if hoverInfo, err := t.client.GetHoverInfo(ctx, sym.Location.URI, sym.Location.Range.Start); err == nil && hoverInfo != "" {
+			entry.Documentation = hoverInfo
+		}
+
 		// Try to enhance with source context
 		if file, err := os.Open(UriToPath(sym.Location.URI)); err == nil {
 			defer file.Close()
