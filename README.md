@@ -70,6 +70,22 @@ Example configuration:
 
 All tools return structured JSON responses for easy programmatic consumption.
 
+## Symbol Anchors
+
+Symbol anchors provide a precise way to identify specific symbol instances in Go code. They use the format:
+```
+anchor://FILE#LINE:CHAR
+```
+
+Where:
+- `FILE`: Relative path to the file from workspace root
+- `LINE`: 1-indexed line number
+- `CHAR`: 1-indexed character position
+
+**Example:** `anchor://calculator.go#6:6`
+
+Anchors are included in all symbol results and enable precise reference finding without ambiguity when multiple symbols share the same name.
+
 ### find_symbol_definitions_by_name
 Find the definitions of a symbol by name in the Go workspace, returning a list of symbol definitions with fuzzy search.
 
@@ -83,20 +99,8 @@ Find the definitions of a symbol by name in the Go workspace, returning a list o
   - `name`: Symbol name
   - `kind`: Symbol type (function, struct, method, etc.)
   - `location`: File path, line, and character position
+  - `anchor`: Symbol anchor in format `anchor://FILE#LINE:CHAR` (1-indexed coordinates)
   - `hover_info`: Hover information from the language server (if available)
-
-### find_symbol_references_by_anchor
-Find all references to a symbol by anchor name in the Go workspace.
-
-**Parameters:**
-- `symbol_name` (string): Symbol name to find references for (case-insensitive matching)
-
-**Response:** JSON array of symbol reference objects, each containing:
-- `name`: Symbol name
-- `kind`: Symbol type (function, struct, method, etc.)
-- `location`: File path, line, and character position of the symbol definition
-- `hover_info`: Hover information from the language server (if available)
-- `references`: Array of locations where the symbol is referenced
 
 ### list_symbols_in_file
 List all symbols in a Go file, returning a list of symbols with hierarchical structure.
@@ -111,6 +115,7 @@ List all symbols in a Go file, returning a list of symbols with hierarchical str
   - `name`: Symbol name
   - `kind`: Symbol type (function, struct, method, etc.)
   - `location`: File path, line, and character position
+  - `anchor`: Symbol anchor in format `anchor://FILE#LINE:CHAR` (1-indexed coordinates)
   - `hover_info`: Hover information from the language server (if available)
   - `children`: Array of child symbols (for hierarchical symbols like structs with fields, methods, etc.)
 
@@ -121,6 +126,21 @@ The tool provides full hierarchical support for Go symbols. For example:
 
 This hierarchical structure is enabled by the LSP client's `hierarchicalDocumentSymbolSupport` capability.
 
+### find_symbol_references_by_anchor
+Find all references to a symbol by its precise anchor location in the Go workspace.
+
+**Parameters:**
+- `anchor` (string): Symbol anchor in format `anchor://FILE#LINE:CHAR` (1-indexed coordinates)
+
+**Response:** JSON object containing:
+- `name`: Symbol name
+- `kind`: Symbol type (function, struct, method, etc.)
+- `location`: File path, line, and character position of the symbol definition
+- `anchor`: The anchor used for the search
+- `hover_info`: Hover information from the language server (if available)
+- `references`: Array of locations where the symbol is referenced
+
+**Note:** This tool requires a precise anchor from the output of `find_symbol_definitions_by_name` or `list_symbols_in_file` tools to identify the exact symbol instance.
 
 ## Architecture
 

@@ -183,24 +183,29 @@ func validateFindSymbolDefinitionsByNameResult(t *testing.T, jsonContent string,
 	assert.NotEmpty(t, firstSymbol.Kind, "Symbol kind should not be empty")
 	assert.NotEmpty(t, firstSymbol.Location.File, "Symbol file should not be empty")
 	assert.Greater(t, firstSymbol.Location.Line, 0, "Symbol line should be positive")
+	assert.NotEmpty(t, firstSymbol.Anchor, "Symbol anchor should not be empty")
+	assert.True(t, firstSymbol.Anchor.IsValid(), "Symbol anchor should be valid")
 }
 
 // validateSymbolReferenceResult validates the structure of a symbol reference result
-func validateSymbolReferenceResult(t *testing.T, jsonContent string, expectedSymbol string) {
-	var results []results.SymbolReferenceResult
-	err := json.Unmarshal([]byte(jsonContent), &results)
-	assert.NoError(t, err, "Should be able to unmarshal symbol reference results")
+func validateSymbolReferenceResult(t *testing.T, jsonContent string, expectedAnchor string) {
+	var result results.SymbolReferenceResult
+	err := json.Unmarshal([]byte(jsonContent), &result)
+	assert.NoError(t, err, "Should be able to unmarshal symbol reference result")
 
 	// Validate basic structure
-	assert.Greater(t, len(results), 0, "Should have found at least one symbol")
+	assert.NotEmpty(t, result.Name, "Symbol name should not be empty")
+	assert.NotEmpty(t, result.Kind, "Symbol kind should not be empty")
+	assert.NotEmpty(t, result.Location.File, "Symbol file should not be empty")
+	assert.Greater(t, result.Location.Line, 0, "Symbol line should be positive")
+	assert.NotEmpty(t, result.Anchor, "Symbol anchor should not be empty")
+	assert.True(t, result.Anchor.IsValid(), "Symbol anchor should be valid")
+	assert.NotNil(t, result.References, "References should not be nil")
 
-	// Validate first symbol
-	firstSymbol := results[0]
-	assert.Equal(t, expectedSymbol, firstSymbol.Name, "First symbol name should match")
-	assert.NotEmpty(t, firstSymbol.Kind, "Symbol kind should not be empty")
-	assert.NotEmpty(t, firstSymbol.Location.File, "Symbol file should not be empty")
-	assert.Greater(t, firstSymbol.Location.Line, 0, "Symbol line should be positive")
-	assert.NotNil(t, firstSymbol.References, "References should not be nil")
+	// Validate that the anchor matches expected format
+	if expectedAnchor != "" {
+		assert.Equal(t, expectedAnchor, result.Anchor.String(), "Anchor should match expected value")
+	}
 }
 
 // validateListSymbolsInFileToolResult validates the structure of a list symbols in file result
@@ -220,6 +225,8 @@ func validateListSymbolsInFileToolResult(t *testing.T, jsonContent string) {
 	assert.NotEmpty(t, firstSymbol.Kind, "Symbol kind should not be empty")
 	assert.NotEmpty(t, firstSymbol.Location.File, "Symbol file should not be empty")
 	assert.Greater(t, firstSymbol.Location.Line, 0, "Symbol line should be positive")
+	assert.NotEmpty(t, firstSymbol.Anchor, "Symbol anchor should not be empty")
+	assert.True(t, firstSymbol.Anchor.IsValid(), "Symbol anchor should be valid")
 
 	// Look for a struct symbol to verify hierarchical structure
 	var structSymbol *results.FileSymbol
@@ -240,6 +247,8 @@ func validateListSymbolsInFileToolResult(t *testing.T, jsonContent string) {
 			assert.NotEmpty(t, firstChild.Name, "Child symbol name should not be empty")
 			assert.NotEmpty(t, firstChild.Kind, "Child symbol kind should not be empty")
 			assert.Greater(t, firstChild.Location.Line, 0, "Child symbol line should be positive")
+			assert.NotEmpty(t, firstChild.Anchor, "Child symbol anchor should not be empty")
+			assert.True(t, firstChild.Anchor.IsValid(), "Child symbol anchor should be valid")
 		}
 	}
 }
@@ -357,7 +366,7 @@ func TestMCPServerIntegration(t *testing.T) {
 	})
 
 	t.Run("FindSymbolReferencesByAnchor", func(t *testing.T) {
-		// Test find symbol references by anchor by searching for "Calculator" symbol
+		// Test find symbol references by anchor using Calculator struct anchor
 		req := MCPRequest{
 			JSONRPC: "2.0",
 			ID:      5,
@@ -365,7 +374,7 @@ func TestMCPServerIntegration(t *testing.T) {
 			Params: map[string]any{
 				"name": "find_symbol_references_by_anchor",
 				"arguments": map[string]any{
-					"symbol_name": "Calculator",
+					"anchor": "anchor://calculator.go#6:6", // Calculator struct definition (1-indexed)
 				},
 			},
 		}
@@ -380,7 +389,7 @@ func TestMCPServerIntegration(t *testing.T) {
 
 		// Parse and validate the JSON response structure
 		contentStr := parseToolResult(t, result)
-		validateSymbolReferenceResult(t, contentStr, "Calculator")
+		validateSymbolReferenceResult(t, contentStr, "anchor://calculator.go#6:6")
 
 		t.Logf("Find symbol references by anchor content: %v", contentStr)
 	})

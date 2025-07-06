@@ -5,7 +5,7 @@
   "params": {
     "name": "find_symbol_references_by_anchor",
     "arguments": {
-      "symbol_name": "Calculator"
+      "anchor": "anchor://calculator.go#6:6"
     }
   }
 }

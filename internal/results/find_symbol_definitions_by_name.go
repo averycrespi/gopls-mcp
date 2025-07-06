@@ -12,5 +12,6 @@ type SymbolDefinition struct {
 	Name      string         `json:"name"`
 	Kind      SymbolKind     `json:"kind"`
 	Location  SymbolLocation `json:"location"`
+	Anchor    SymbolAnchor   `json:"anchor"`
 	HoverInfo string         `json:"hover_info,omitempty"`
 }

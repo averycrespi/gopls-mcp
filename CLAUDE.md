@@ -51,17 +51,18 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 ### Key Design Patterns
 
 **Tool Registration**: Each MCP tool is implemented in its own file in `internal/tools/`:
-- `find_symbol_definitions_by_name.go` - `find_symbol_definitions_by_name` → LSP WorkspaceSymbol + Definition requests
-- `find_symbol_references_by_anchor.go` - `find_symbol_references_by_anchor` → LSP WorkspaceSymbol + References requests with case-insensitive matching
-- `list_symbols_in_file.go` - `list_symbols_in_file` → LSP DocumentSymbol requests with hierarchical support
+- `find_symbol_definitions_by_name.go` - `find_symbol_definitions_by_name` → LSP WorkspaceSymbol + Definition requests with anchor generation
+- `find_symbol_references_by_anchor.go` - `find_symbol_references_by_anchor` → LSP References requests using precise anchor locations
+- `list_symbols_in_file.go` - `list_symbols_in_file` → LSP DocumentSymbol requests with hierarchical support and anchor generation
 - `utils.go` - Shared utilities for path handling and position parsing
 
 **JSON Response Structure**: Structured output types in `internal/results/`:
 - `symbol_kind.go` - SymbolKind enum with LSP mapping (file, function, struct, etc.)
-- `symbol_location.go` - Location information with file paths and positions
-- `find_symbol_definitions_by_name.go` - FindSymbolDefinitionsByNameToolResult with searched symbol name, message, and SymbolDefinition array
-- `symbol_reference.go` - Reference result type with symbol and reference locations
-- `list_symbols_in_file.go` - ListSymbolsInFileToolResult with file path, message, and hierarchical FileSymbol array
+- `symbol_location.go` - Location information with file paths and positions, plus anchor conversion
+- `symbol_anchor.go` - SymbolAnchor type for precise symbol identification with format `anchor://FILE#LINE:CHAR` (1-indexed coordinates)
+- `find_symbol_definitions_by_name.go` - FindSymbolDefinitionsByNameToolResult with searched symbol name, message, and SymbolDefinition array (includes anchors)
+- `find_symbol_references_by_anchor.go` - SymbolReferenceResult with anchor-based reference finding
+- `list_symbols_in_file.go` - ListSymbolsInFileToolResult with file path, message, and hierarchical FileSymbol array (includes anchors)
 
 **Interface Design**: The codebase uses clean interfaces to separate concerns:
 - `types.Client` - Defines LSP client operations including Start/Stop (implemented by GoplsClient)
@@ -79,7 +80,15 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - Type-safe SymbolKind enums (function, struct, method, etc.)
 - Rich metadata including hover info from the language server
 - Relative file paths from workspace root
+- Symbol anchors for precise identification (`anchor://FILE#LINE:CHAR` format)
 - Descriptive messages and metadata (e.g., file paths, symbol counts)
+
+**Symbol Anchor System**: Enables precise symbol identification and eliminates ambiguity:
+- Format: `anchor://FILE#LINE:CHAR` with 1-indexed coordinates (matches display format)
+- Generated for all SymbolDefinition and FileSymbol results
+- Used by `find_symbol_references_by_anchor` for exact reference finding
+- Converts to 0-indexed coordinates internally for LSP operations
+- Validates anchor format and coordinates before processing
 
 **Hierarchical Symbol Support**: The `list_symbols_in_file` tool provides full hierarchical support for Go symbols:
 - Enabled by declaring `hierarchicalDocumentSymbolSupport: true` in the LSP client capabilities
