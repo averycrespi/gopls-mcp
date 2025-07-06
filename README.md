@@ -71,16 +71,19 @@ Example configuration:
 All tools return structured JSON responses for easy programmatic consumption.
 
 ### find_symbol_definitions_by_name
-Find the definition of a symbol by name in Go code.
+Find the definition of a symbol by name in Go code using fuzzy search.
 
 **Parameters:**
 - `symbol_name` (string): Symbol name to find the definition for
 
-**Response:** JSON array of symbol definition objects, each containing:
-- `name`: Symbol name
-- `kind`: Symbol type (function, struct, method, etc.)
-- `location`: File path, line, and character position
-- `hover_info`: Hover information from the language server (if available)
+**Response:** JSON object containing:
+- `name`: The searched symbol name
+- `message`: Summary message about the results (e.g., "Found 3 symbol definitions." or "No symbol definitions found.")
+- `results`: Array of symbol definition objects (may be empty), each containing:
+  - `name`: Symbol name
+  - `kind`: Symbol type (function, struct, method, etc.)
+  - `location`: File path, line, and character position
+  - `hover_info`: Hover information from the language server (if available)
 
 ### symbol_references
 Find all references to a symbol.

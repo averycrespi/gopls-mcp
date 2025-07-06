@@ -168,16 +168,18 @@ func parseToolResult(t *testing.T, result map[string]any) string {
 
 // validateFindSymbolDefinitionsByNameResult validates the structure of a find symbol definitions by name result
 func validateFindSymbolDefinitionsByNameResult(t *testing.T, jsonContent string, expectedSymbol string) {
-	var results []results.SymbolDefinitionResult
-	err := json.Unmarshal([]byte(jsonContent), &results)
-	assert.NoError(t, err, "Should be able to unmarshal symbol definition results")
+	var result results.FindSymbolDefinitionsByNameToolResult
+	err := json.Unmarshal([]byte(jsonContent), &result)
+	assert.NoError(t, err, "Should be able to unmarshal find symbol definitions by name tool result")
 
 	// Validate basic structure
-	assert.Greater(t, len(results), 0, "Should have found at least one symbol")
+	assert.Equal(t, expectedSymbol, result.Name, "Searched symbol name should match")
+	assert.NotEmpty(t, result.Message, "Message should not be empty")
+	assert.Greater(t, len(result.Results), 0, "Should have found at least one symbol")
 
 	// Validate first symbol
-	firstSymbol := results[0]
-	assert.Equal(t, expectedSymbol, firstSymbol.Name, "First symbol name should match")
+	firstSymbol := result.Results[0]
+	assert.NotEmpty(t, firstSymbol.Name, "Symbol name should not be empty")
 	assert.NotEmpty(t, firstSymbol.Kind, "Symbol kind should not be empty")
 	assert.NotEmpty(t, firstSymbol.Location.File, "Symbol file should not be empty")
 	assert.Greater(t, firstSymbol.Location.Line, 0, "Symbol line should be positive")

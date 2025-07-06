@@ -45,18 +45,17 @@ test-symbol-references: build
 test-list-symbols-in-file: build
 	@./scripts/test-mcp-tool.sh list_symbols_in_file
 
-
 # Show help
 help:
 	@echo "Available targets:"
-	@echo "  build                  Build the gopls-mcp binary"
-	@echo "  test                   Run unit tests"
-	@echo "  test-integration       Run integration tests"
-	@echo "  clean                  Clean build artifacts"
-	@echo "  deps                   Download and tidy dependencies"
-	@echo "  install-gopls          Install gopls language server"
-	@echo "  run                    Run server"
-	@echo "  test-find-symbol-definitions-by-name Test find_symbol_definitions_by_name MCP tool"
-	@echo "  test-symbol-references Test symbol_references MCP tool"
-	@echo "  test-list-symbols-in-file Test list_symbols_in_file MCP tool"
-	@echo "  help                   Show this help message"
+	@echo "  build                                    Build the gopls-mcp binary"
+	@echo "  test                                     Run unit tests"
+	@echo "  test-integration                         Run integration tests"
+	@echo "  clean                                    Clean build artifacts"
+	@echo "  deps                                     Download and tidy dependencies"
+	@echo "  install-gopls                            Install gopls language server"
+	@echo "  run                                      Run server"
+	@echo "  test-find-symbol-definitions-by-name     Test find_symbol_definitions_by_name MCP tool"
+	@echo "  test-symbol-references                   Test symbol_references MCP tool"
+	@echo "  test-list-symbols-in-file                Test list_symbols_in_file MCP tool"
+	@echo "  help                                     Show this help message"

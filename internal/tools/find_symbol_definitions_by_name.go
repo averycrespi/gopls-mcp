@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/averycrespi/gopls-mcp/internal/results"
 	"github.com/averycrespi/gopls-mcp/pkg/types"
@@ -47,43 +46,45 @@ func (t *FindSymbolDefinitionsByNameTool) Handle(ctx context.Context, req mcp.Ca
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to search workspace symbols: %v", err)), nil
 	}
 
-	var symbolResults []results.SymbolDefinitionResult
+	toolResult := results.FindSymbolDefinitionsByNameToolResult{
+		Name:    symbolName,
+		Results: make([]results.SymbolDefinitionResult, 0),
+	}
 	for _, sym := range symbols {
-		// Only return results for the exact symbol name, case insensitive
-		if !strings.EqualFold(sym.Name, symbolName) {
-			continue
-		}
-
 		definitions, err := t.client.GoToDefinition(ctx, sym.Location.URI, sym.Location.Range.Start)
-		if err != nil || len(definitions) == 0 {
+		if err != nil {
+			// Skip definition errors; we'll handle the empty result case later.
 			continue
 		}
 
-		// Use the first definition matching the symbol
-		def := definitions[0]
-		entry := results.SymbolDefinitionResult{
-			Name: sym.Name,
-			Kind: results.NewSymbolKind(sym.Kind),
-			Location: results.SymbolLocation{
-				File:      GetRelativePath(UriToPath(def.URI), t.config.WorkspaceRoot),
-				Line:      def.Range.Start.Line + 1,      // convert to 1-indexed line numbers
-				Character: def.Range.Start.Character + 1, // convert to 1-indexed character numbers
-			},
-		}
+		for _, def := range definitions {
+			entry := results.SymbolDefinitionResult{
+				Name: sym.Name,
+				Kind: results.NewSymbolKind(sym.Kind),
+				Location: results.SymbolLocation{
+					File:      GetRelativePath(UriToPath(def.URI), t.config.WorkspaceRoot),
+					Line:      def.Range.Start.Line + 1,      // convert to 1-indexed line numbers
+					Character: def.Range.Start.Character + 1, // convert to 1-indexed character numbers
+				},
+			}
 
-		// Try to enhance with hover information
-		if hoverInfo, err := t.client.GetHoverInfo(ctx, def.URI, def.Range.Start); err == nil && hoverInfo != "" {
-			entry.HoverInfo = hoverInfo
-		}
+			// Try to enhance with hover information
+			if hoverInfo, err := t.client.GetHoverInfo(ctx, def.URI, def.Range.Start); err == nil && hoverInfo != "" {
+				entry.HoverInfo = hoverInfo
+			}
 
-		symbolResults = append(symbolResults, entry)
+			toolResult.Results = append(toolResult.Results, entry)
+		}
 	}
 
-	if len(symbolResults) == 0 {
-		return mcp.NewToolResultText(fmt.Sprintf("No results for symbol name: %s", symbolName)), nil
+	if len(toolResult.Results) == 0 {
+		toolResult.Message = "No symbol definitions found. " +
+			"This could mean that the symbol name is incorrect, or that the symbol is not defined in the workspace."
+	} else {
+		toolResult.Message = fmt.Sprintf("Found %d symbol definitions.", len(toolResult.Results))
 	}
 
-	jsonBytes, err := json.MarshalIndent(symbolResults, "", "  ")
+	jsonBytes, err := json.MarshalIndent(toolResult, "", "  ")
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal JSON: %v", err)), nil
 	}
