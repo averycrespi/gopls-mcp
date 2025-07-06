@@ -7,6 +7,7 @@ An MCP (Model Context Protocol) server that exposes the LSP functionality of the
 gopls-mcp provides the following tools:
 - **symbol_definition**: Find the definition of a symbol name.
 - **symbol_references**: Find all references to a symbol name.
+- **file_symbols**: Get all symbols in a Go file.
 
 ## Installation
 
@@ -95,6 +96,26 @@ Find all references to a symbol.
 - `documentation`: Hover information (if available)
 - `source`: Source code context with line highlighting (if available)
 - `references`: Array of locations where the symbol is referenced
+
+### file_symbols
+Get all symbols in a Go file with hierarchical structure support.
+
+**Parameters:**
+- `file_path` (string): Path to the Go file
+
+**Response:** JSON array of file symbol objects, each containing:
+- `name`: Symbol name
+- `kind`: Symbol type (function, struct, method, etc.)
+- `location`: File path, line, and character position
+- `documentation`: Hover information (if available)
+- `children`: Array of child symbols (for hierarchical symbols like structs with fields, methods, etc.)
+
+The tool provides full hierarchical support for Go symbols. For example:
+- Struct symbols include their fields and methods as children
+- Interface symbols include their method signatures as children
+- Function symbols may include nested function declarations as children
+
+This hierarchical structure is enabled by the LSP client's `hierarchicalDocumentSymbolSupport` capability.
 
 
 ## Architecture

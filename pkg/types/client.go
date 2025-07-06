@@ -13,6 +13,7 @@ type Client interface {
 	FindReferences(ctx context.Context, uri string, position Position) ([]Location, error)
 	GetHoverInfo(ctx context.Context, uri string, position Position) (string, error)
 	FuzzyFindSymbol(ctx context.Context, query string) ([]SymbolInformation, error)
+	GetDocumentSymbols(ctx context.Context, uri string) ([]DocumentSymbol, error)
 }
 
 // Position represents a position in a text document
@@ -40,11 +41,12 @@ type SymbolInformation struct {
 	Location Location `json:"location"`
 }
 
-// Diagnostic represents a diagnostic message
-type Diagnostic struct {
-	Range    Range  `json:"range"`
-	Severity int    `json:"severity"`
-	Message  string `json:"message"`
-	Source   string `json:"source,omitempty"`
+// DocumentSymbol represents a symbol within a document with hierarchical structure
+type DocumentSymbol struct {
+	Name           string           `json:"name"`
+	Detail         string           `json:"detail,omitempty"`
+	Kind           int              `json:"kind"`
+	Range          Range            `json:"range"`
+	SelectionRange Range            `json:"selectionRange"`
+	Children       []DocumentSymbol `json:"children,omitempty"`
 }
-

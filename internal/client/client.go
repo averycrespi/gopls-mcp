@@ -82,8 +82,14 @@ func (c *GoplsClient) initialize(rootURI string) error {
 			"name":    project.Name,
 			"version": project.Version,
 		},
-		"rootUri":      rootURI,
-		"capabilities": map[string]any{},
+		"rootUri": rootURI,
+		"capabilities": map[string]any{
+			"textDocument": map[string]any{
+				"documentSymbol": map[string]any{
+					"hierarchicalDocumentSymbolSupport": true,
+				},
+			},
+		},
 	}
 
 	_, err := c.transport.SendRequest("initialize", params)
@@ -230,7 +236,6 @@ func (c *GoplsClient) GetHoverInfo(ctx context.Context, uri string, position typ
 	return fmt.Sprintf("%v", hover.Contents), nil
 }
 
-
 func (c *GoplsClient) FuzzyFindSymbol(ctx context.Context, query string) ([]types.SymbolInformation, error) {
 	params := map[string]any{
 		"query": query,
@@ -306,4 +311,51 @@ func (c *GoplsClient) RenameSymbol(ctx context.Context, uri string, position typ
 	}
 
 	return workspaceEdit.Changes, nil
+}
+
+func (c *GoplsClient) GetDocumentSymbols(ctx context.Context, uri string) ([]types.DocumentSymbol, error) {
+	params := map[string]any{
+		"textDocument": map[string]any{
+			"uri": uri,
+		},
+	}
+
+	response, err := c.transport.SendRequest("textDocument/documentSymbol", params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get document symbols: %w", err)
+	}
+
+	// LSP documentSymbol response can be null, DocumentSymbol[], or SymbolInformation[]
+	var rawResponse json.RawMessage
+	if err := json.Unmarshal(response, &rawResponse); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal document symbols response: %w", err)
+	}
+
+	// Handle null response
+	if string(rawResponse) == "null" {
+		return []types.DocumentSymbol{}, nil
+	}
+
+	// Try to unmarshal as DocumentSymbol[] (hierarchical)
+	var symbols []types.DocumentSymbol
+	if err := json.Unmarshal(rawResponse, &symbols); err != nil {
+		// If that fails, try to unmarshal as SymbolInformation[] (flat)
+		var symbolInfos []types.SymbolInformation
+		if err := json.Unmarshal(rawResponse, &symbolInfos); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal document symbols response: %w", err)
+		}
+
+		// Convert SymbolInformation to DocumentSymbol
+		symbols = make([]types.DocumentSymbol, len(symbolInfos))
+		for i, info := range symbolInfos {
+			symbols[i] = types.DocumentSymbol{
+				Name:           info.Name,
+				Kind:           info.Kind,
+				Range:          info.Location.Range,
+				SelectionRange: info.Location.Range,
+			}
+		}
+	}
+
+	return symbols, nil
 }

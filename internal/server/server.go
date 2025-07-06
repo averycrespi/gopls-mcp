@@ -53,4 +53,7 @@ func (s *GoplsServer) registerTools() {
 
 	symbolRefsTool := tools.NewSymbolReferencesTool(s.goplsClient, s.config)
 	s.mcpServer.AddTool(symbolRefsTool.GetTool(), symbolRefsTool.Handle)
+
+	fileSymbolsTool := tools.NewFileSymbolsTool(s.goplsClient, s.config)
+	s.mcpServer.AddTool(fileSymbolsTool.GetTool(), fileSymbolsTool.Handle)
 }

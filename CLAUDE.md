@@ -45,7 +45,8 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 
 **Tool Registration**: Each MCP tool is implemented in its own file in `internal/tools/`:
 - `symbol_definition.go` - `symbol_definition` → LSP WorkspaceSymbol + Definition requests
-- `symbol_references.go` - `symbol_references` → LSP WorkspaceSymbol + References requests
+- `symbol_references.go` - `symbol_references` → LSP WorkspaceSymbol + References requests (renamed from find_references)
+- `file_symbols.go` - `file_symbols` → LSP DocumentSymbol requests with hierarchical support
 - `utils.go` - Shared utilities for path handling and position parsing
 
 **JSON Response Structure**: Structured output types in `internal/results/`:
@@ -54,6 +55,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - `source_context.go` - Source code context with line highlighting
 - `symbol_definition.go` - Definition result type with symbol information
 - `symbol_reference.go` - Reference result type with symbol and reference locations
+- `file_symbol.go` - File symbol result type with hierarchical structure
 
 **Interface Design**: The codebase uses clean interfaces to separate concerns:
 - `types.Client` - Defines LSP client operations including Start/Stop (implemented by GoplsClient)
@@ -72,6 +74,13 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - Rich metadata including documentation from hover info
 - Source code context with line numbers and highlighting
 - Relative file paths from workspace root
+
+**Hierarchical Symbol Support**: The `file_symbols` tool provides full hierarchical support for Go symbols:
+- Enabled by declaring `hierarchicalDocumentSymbolSupport: true` in the LSP client capabilities
+- Structs include their fields and methods as children
+- Interfaces include their method signatures as children
+- Functions may include nested function declarations as children
+- Recursive hover info collection for all symbol levels
 
 ## MCP Integration
 

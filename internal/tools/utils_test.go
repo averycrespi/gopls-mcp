@@ -142,9 +142,9 @@ func TestGetPosition(t *testing.T) {
 			// Create a mock request with the arguments
 			request := mcp.CallToolRequest{}
 			request.Params.Arguments = tt.arguments
-			
+
 			result, err := GetPosition(request)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -176,7 +176,7 @@ func TestGetRelativePath(t *testing.T) {
 		},
 		{
 			name:          "File outside workspace (returns basename)",
-			absolutePath:  "/other/path/file.go", 
+			absolutePath:  "/other/path/file.go",
 			workspaceRoot: "/home/user/project",
 			expected:      "../../../other/path/file.go", // Returns relative path when possible
 		},
@@ -203,7 +203,7 @@ func TestGetRelativePath(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := GetRelativePath(tt.absolutePath, tt.workspaceRoot)
-			
+
 			// Normalize path separators for cross-platform compatibility
 			expected := filepath.FromSlash(tt.expected)
 			assert.Equal(t, expected, result)
@@ -273,7 +273,7 @@ func main() {
 		t.Run(tt.name, func(t *testing.T) {
 			reader := strings.NewReader(sourceCode)
 			result, err := ReadSourceLines(reader, tt.startLine, tt.endLine, tt.highlightLine)
-			
+
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -283,7 +283,7 @@ func main() {
 func TestReadSourceLines_Error(t *testing.T) {
 	// Test with a reader that will cause scanner error
 	errorReader := &errorReader{}
-	
+
 	_, err := ReadSourceLines(errorReader, 0, 5, 2)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to scan source lines")
@@ -358,7 +358,7 @@ func main() {
 		t.Run(tt.name, func(t *testing.T) {
 			reader := strings.NewReader(sourceCode)
 			result, err := ReadSourceContext(reader, tt.startLine, tt.contextLines)
-			
+
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -368,7 +368,7 @@ func main() {
 func TestReadSourceContext_Error(t *testing.T) {
 	// Test with a reader that will cause scanner error
 	errorReader := &errorReader{}
-	
+
 	_, err := ReadSourceContext(errorReader, 5, 2)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to read source lines")
