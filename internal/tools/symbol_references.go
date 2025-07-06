@@ -12,7 +12,6 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-
 // SymbolReferencesTool handles symbol-references requests
 type SymbolReferencesTool struct {
 	client types.Client

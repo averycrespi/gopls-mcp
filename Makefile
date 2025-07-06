@@ -1,4 +1,4 @@
-.PHONY: build test test-integration clean install help run test-symbol-definition test-symbol-references test-file-symbols
+.PHONY: build test test-integration clean install help run test-symbol-definition test-symbol-references test-list-symbols-in-file
 
 # Default target
 all: build
@@ -41,9 +41,9 @@ test-symbol-definition: build
 test-symbol-references: build
 	@./scripts/test-mcp-tool.sh symbol_references
 
-# Test file symbols tool
-test-file-symbols: build
-	@./scripts/test-mcp-tool.sh file_symbols
+# Test list symbols in file tool
+test-list-symbols-in-file: build
+	@./scripts/test-mcp-tool.sh list_symbols_in_file
 
 
 # Show help
@@ -58,5 +58,5 @@ help:
 	@echo "  run                    Run server"
 	@echo "  test-symbol-definition Test symbol_definition MCP tool"
 	@echo "  test-symbol-references Test symbol_references MCP tool"
-	@echo "  test-file-symbols      Test file_symbols MCP tool"
+	@echo "  test-list-symbols-in-file Test list_symbols_in_file MCP tool"
 	@echo "  help                   Show this help message"

@@ -7,7 +7,7 @@ An MCP (Model Context Protocol) server that exposes the LSP functionality of the
 gopls-mcp provides the following tools:
 - **symbol_definition**: Find the definition of a symbol name.
 - **symbol_references**: Find all references to a symbol name.
-- **file_symbols**: Get all symbols in a Go file.
+- **list_symbols_in_file**: Get all symbols in a Go file.
 
 ## Installation
 
@@ -95,7 +95,7 @@ Find all references to a symbol.
 - `hover_info`: Hover information from the language server (if available)
 - `references`: Array of locations where the symbol is referenced
 
-### file_symbols
+### list_symbols_in_file
 Get all symbols in a Go file with hierarchical structure support.
 
 **Parameters:**

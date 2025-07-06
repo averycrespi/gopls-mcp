@@ -150,4 +150,3 @@ func TestGetRelativePath(t *testing.T) {
 		})
 	}
 }
-

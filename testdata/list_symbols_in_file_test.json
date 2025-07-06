@@ -3,7 +3,7 @@
   "id": 4,
   "method": "tools/call",
   "params": {
-    "name": "file_symbols",
+    "name": "list_symbols_in_file",
     "arguments": {
       "file_path": "calculator.go"
     }

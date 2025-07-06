@@ -12,7 +12,6 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-
 // SymbolDefinitionTool handles symbol definition requests
 type SymbolDefinitionTool struct {
 	client types.Client

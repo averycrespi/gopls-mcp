@@ -11,31 +11,31 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-// FileSymbolsTool handles file symbols requests
-type FileSymbolsTool struct {
+// ListSymbolsInFileTool handles list symbols in file requests
+type ListSymbolsInFileTool struct {
 	client types.Client
 	config types.Config
 }
 
-// NewFileSymbolsTool creates a new file symbols tool
-func NewFileSymbolsTool(client types.Client, config types.Config) *FileSymbolsTool {
-	return &FileSymbolsTool{
+// NewListSymbolsInFileTool creates a new list symbols in file tool
+func NewListSymbolsInFileTool(client types.Client, config types.Config) *ListSymbolsInFileTool {
+	return &ListSymbolsInFileTool{
 		client: client,
 		config: config,
 	}
 }
 
 // GetTool returns the MCP tool definition
-func (t *FileSymbolsTool) GetTool() mcp.Tool {
-	tool := mcp.NewTool("file_symbols",
-		mcp.WithDescription("Get all symbols in a Go file"),
+func (t *ListSymbolsInFileTool) GetTool() mcp.Tool {
+	tool := mcp.NewTool("list_symbols_in_file",
+		mcp.WithDescription("List all symbols in a Go file, returning a hierarchical structure of symbols"),
 		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the Go file")),
 	)
 	return tool
 }
 
 // Handle processes the tool request
-func (t *FileSymbolsTool) Handle(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (t *ListSymbolsInFileTool) Handle(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	filePath := mcp.ParseString(req, "file_path", "")
 	if filePath == "" {
 		return mcp.NewToolResultError("file_path parameter is required"), nil
@@ -67,7 +67,7 @@ func (t *FileSymbolsTool) Handle(ctx context.Context, req mcp.CallToolRequest) (
 }
 
 // convertDocumentSymbol converts a DocumentSymbol to FileSymbolResult recursively
-func (t *FileSymbolsTool) convertDocumentSymbol(ctx context.Context, uri string, docSym types.DocumentSymbol, filePath string) results.FileSymbolResult {
+func (t *ListSymbolsInFileTool) convertDocumentSymbol(ctx context.Context, uri string, docSym types.DocumentSymbol, filePath string) results.FileSymbolResult {
 	result := results.FileSymbolResult{
 		Name: docSym.Name,
 		Kind: results.NewSymbolKind(docSym.Kind),

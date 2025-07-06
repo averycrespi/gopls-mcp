@@ -30,4 +30,3 @@ func GetRelativePath(absolutePath, workspaceRoot string) string {
 	}
 	return filepath.Base(absolutePath)
 }
-

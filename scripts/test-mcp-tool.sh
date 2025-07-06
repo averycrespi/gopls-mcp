@@ -8,17 +8,17 @@ set -e
 TOOL_NAME="$1"
 if [[ -z "$TOOL_NAME" ]]; then
     echo "Usage: $0 <tool_name>"
-    echo "Available tools: symbol_definition, symbol_references, file_symbols"
+    echo "Available tools: symbol_definition, symbol_references, list_symbols_in_file"
     exit 1
 fi
 
 # Validate tool name
 case "$TOOL_NAME" in
-    "symbol_definition"|"symbol_references"|"file_symbols")
+    "symbol_definition"|"symbol_references"|"list_symbols_in_file")
         ;;
     *)
         echo "Error: Unknown tool '$TOOL_NAME'"
-        echo "Available tools: symbol_definition, symbol_references, file_symbols"
+        echo "Available tools: symbol_definition, symbol_references, list_symbols_in_file"
         exit 1
         ;;
 esac

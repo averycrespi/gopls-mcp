@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### MCP Tool Testing
 - `make test-symbol-definition` - Test symbol_definition tool with pretty-printed JSON output
 - `make test-symbol-references` - Test symbol_references tool with pretty-printed JSON output
-- `make test-file-symbols` - Test file_symbols tool with pretty-printed JSON output
+- `make test-list-symbols-in-file` - Test list_symbols_in_file tool with pretty-printed JSON output
 - Uses `scripts/test-mcp-tool.sh` for JSON extraction and formatting
 
 ### Dependencies
@@ -53,7 +53,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 **Tool Registration**: Each MCP tool is implemented in its own file in `internal/tools/`:
 - `symbol_definition.go` - `symbol_definition` → LSP WorkspaceSymbol + Definition requests
 - `symbol_references.go` - `symbol_references` → LSP WorkspaceSymbol + References requests (renamed from find_references)
-- `file_symbols.go` - `file_symbols` → LSP DocumentSymbol requests with hierarchical support
+- `file_symbols.go` - `list_symbols_in_file` → LSP DocumentSymbol requests with hierarchical support
 - `utils.go` - Shared utilities for path handling and position parsing
 
 **JSON Response Structure**: Structured output types in `internal/results/`:
@@ -80,7 +80,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - Rich metadata including hover info from the language server
 - Relative file paths from workspace root
 
-**Hierarchical Symbol Support**: The `file_symbols` tool provides full hierarchical support for Go symbols:
+**Hierarchical Symbol Support**: The `list_symbols_in_file` tool provides full hierarchical support for Go symbols:
 - Enabled by declaring `hierarchicalDocumentSymbolSupport: true` in the LSP client capabilities
 - Structs include their fields and methods as children
 - Interfaces include their method signatures as children
