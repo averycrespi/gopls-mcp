@@ -75,9 +75,9 @@ func (t *ListSymbolsInFileTool) Handle(ctx context.Context, req mcp.CallToolRequ
 // convertDocumentSymbol converts a DocumentSymbol to FileSymbol recursively
 func (t *ListSymbolsInFileTool) convertDocumentSymbol(ctx context.Context, uri string, docSym types.DocumentSymbol, filePath string) results.FileSymbol {
 	location := results.SymbolLocation{
-		File:      GetRelativePath(UriToPath(PathToUri(filePath, t.config.WorkspaceRoot)), t.config.WorkspaceRoot),
-		Line:      docSym.SelectionRange.Start.Line + 1,      // convert to 1-indexed line numbers
-		Character: docSym.SelectionRange.Start.Character + 1, // convert to 1-indexed character numbers
+		File:        GetRelativePath(UriToPath(PathToUri(filePath, t.config.WorkspaceRoot)), t.config.WorkspaceRoot),
+		DisplayLine: docSym.SelectionRange.Start.Line + 1,      // Convert LSP coordinates to display line
+		DisplayChar: docSym.SelectionRange.Start.Character + 1, // Convert LSP coordinates to display character
 	}
 	result := results.FileSymbol{
 		Name:     docSym.Name,

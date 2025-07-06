@@ -61,9 +61,9 @@ func (t *FindSymbolDefinitionsByNameTool) Handle(ctx context.Context, req mcp.Ca
 
 		for _, loc := range defLocations {
 			location := results.SymbolLocation{
-				File:      GetRelativePath(UriToPath(loc.URI), t.config.WorkspaceRoot),
-				Line:      loc.Range.Start.Line + 1,      // Convert to 1-indexed line numbers
-				Character: loc.Range.Start.Character + 1, // Convert to 1-indexed character numbers
+				File:        GetRelativePath(UriToPath(loc.URI), t.config.WorkspaceRoot),
+				DisplayLine: loc.Range.Start.Line + 1,      // Convert LSP coordinates to display line
+				DisplayChar: loc.Range.Start.Character + 1, // Convert LSP coordinates to display character
 			}
 			entry := results.SymbolDefinition{
 				Name:     sym.Name,

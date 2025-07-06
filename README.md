@@ -74,17 +74,17 @@ All tools return structured JSON responses for easy programmatic consumption.
 
 Symbol anchors provide a precise way to identify specific symbol instances in Go code. They use the format:
 ```
-anchor://FILE#LINE:CHAR
+go://FILE#LINE:CHAR
 ```
 
 Where:
 - `FILE`: Relative path to the file from workspace root
-- `LINE`: 1-indexed line number
-- `CHAR`: 1-indexed character position
+- `LINE`: Display line number (starts at 1, matches editor display)
+- `CHAR`: Display character position (starts at 1, matches editor display)
 
-**Example:** `anchor://calculator.go#6:6`
+**Example:** `go://calculator.go#6:6`
 
-Anchors are included in all symbol results and enable precise reference finding without ambiguity when multiple symbols share the same name.
+Anchors use display coordinates that match what you see in your editor. They are included in all symbol results and enable precise reference finding without ambiguity when multiple symbols share the same name.
 
 ### find_symbol_definitions_by_name
 Find the definitions of a symbol by name in the Go workspace, returning a list of symbol definitions with fuzzy search.
@@ -99,7 +99,7 @@ Find the definitions of a symbol by name in the Go workspace, returning a list o
   - `name`: Symbol name
   - `kind`: Symbol type (function, struct, method, etc.)
   - `location`: File path, line, and character position
-  - `anchor`: Symbol anchor in format `anchor://FILE#LINE:CHAR` (1-indexed coordinates)
+  - `anchor`: Symbol anchor in format `go://FILE#LINE:CHAR` (display coordinates)
   - `hover_info`: Hover information from the language server (if available)
 
 ### list_symbols_in_file
@@ -115,7 +115,7 @@ List all symbols in a Go file, returning a list of symbols with hierarchical str
   - `name`: Symbol name
   - `kind`: Symbol type (function, struct, method, etc.)
   - `location`: File path, line, and character position
-  - `anchor`: Symbol anchor in format `anchor://FILE#LINE:CHAR` (1-indexed coordinates)
+  - `anchor`: Symbol anchor in format `go://FILE#LINE:CHAR` (display coordinates)
   - `hover_info`: Hover information from the language server (if available)
   - `children`: Array of child symbols (for hierarchical symbols like structs with fields, methods, etc.)
 
@@ -130,7 +130,7 @@ This hierarchical structure is enabled by the LSP client's `hierarchicalDocument
 Find all references to a symbol by its precise anchor location in the Go workspace.
 
 **Parameters:**
-- `anchor` (string): Symbol anchor in format `anchor://FILE#LINE:CHAR` (1-indexed coordinates)
+- `symbol_anchor` (string): Symbol anchor in format `go://FILE#LINE:CHAR` (display coordinates)
 
 **Response:** JSON object containing:
 - `name`: Symbol name

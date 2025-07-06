@@ -8,7 +8,7 @@ import (
 
 func TestNewSymbolAnchor(t *testing.T) {
 	anchor := NewSymbolAnchor("test.go", 10, 5)
-	expected := "anchor://test.go#10:5"
+	expected := "go://test.go#10:5"
 	assert.Equal(t, expected, anchor.String())
 }
 
@@ -24,7 +24,7 @@ func TestSymbolAnchor_Parse(t *testing.T) {
 	}{
 		{
 			name:         "valid anchor",
-			anchor:       "anchor://test.go#10:5",
+			anchor:       "go://test.go#10:5",
 			expectedFile: "test.go",
 			expectedLine: 10,
 			expectedChar: 5,
@@ -32,7 +32,7 @@ func TestSymbolAnchor_Parse(t *testing.T) {
 		},
 		{
 			name:         "valid anchor with path",
-			anchor:       "anchor://src/main.go#1:1",
+			anchor:       "go://src/main.go#1:1",
 			expectedFile: "src/main.go",
 			expectedLine: 1,
 			expectedChar: 1,
@@ -52,57 +52,57 @@ func TestSymbolAnchor_Parse(t *testing.T) {
 		},
 		{
 			name:          "no fragment separator",
-			anchor:        "anchor://test.go",
+			anchor:        "go://test.go",
 			expectError:   true,
 			errorContains: "invalid anchor format",
 		},
 		{
 			name:          "empty file",
-			anchor:        "anchor://#10:5",
+			anchor:        "go://#10:5",
 			expectError:   true,
 			errorContains: "empty file",
 		},
 		{
 			name:          "invalid coordinates format",
-			anchor:        "anchor://test.go#10",
+			anchor:        "go://test.go#10",
 			expectError:   true,
 			errorContains: "invalid coordinate format",
 		},
 		{
 			name:          "invalid line number",
-			anchor:        "anchor://test.go#abc:5",
+			anchor:        "go://test.go#abc:5",
 			expectError:   true,
 			errorContains: "invalid line number",
 		},
 		{
 			name:          "invalid character number",
-			anchor:        "anchor://test.go#10:abc",
+			anchor:        "go://test.go#10:abc",
 			expectError:   true,
 			errorContains: "invalid character number",
 		},
 		{
 			name:          "zero line number",
-			anchor:        "anchor://test.go#0:5",
+			anchor:        "go://test.go#0:5",
 			expectError:   true,
-			errorContains: "line number must be positive (1-indexed)",
+			errorContains: "display line must be positive (starts at 1)",
 		},
 		{
 			name:          "zero character number",
-			anchor:        "anchor://test.go#10:0",
+			anchor:        "go://test.go#10:0",
 			expectError:   true,
-			errorContains: "character number must be positive (1-indexed)",
+			errorContains: "display character must be positive (starts at 1)",
 		},
 		{
 			name:          "negative line number",
-			anchor:        "anchor://test.go#-1:5",
+			anchor:        "go://test.go#-1:5",
 			expectError:   true,
-			errorContains: "line number must be positive (1-indexed)",
+			errorContains: "display line must be positive (starts at 1)",
 		},
 		{
 			name:          "negative character number",
-			anchor:        "anchor://test.go#10:-1",
+			anchor:        "go://test.go#10:-1",
 			expectError:   true,
-			errorContains: "character number must be positive (1-indexed)",
+			errorContains: "display character must be positive (starts at 1)",
 		},
 	}
 
@@ -133,7 +133,7 @@ func TestSymbolAnchor_IsValid(t *testing.T) {
 	}{
 		{
 			name:     "valid anchor",
-			anchor:   "anchor://test.go#10:5",
+			anchor:   "go://test.go#10:5",
 			expected: true,
 		},
 		{
@@ -157,13 +157,13 @@ func TestSymbolAnchor_IsValid(t *testing.T) {
 }
 
 func TestSymbolAnchor_ToSymbolLocation(t *testing.T) {
-	anchor := SymbolAnchor("anchor://test.go#10:5")
+	anchor := SymbolAnchor("go://test.go#10:5")
 	location, err := anchor.ToSymbolLocation()
 
 	assert.NoError(t, err)
 	assert.Equal(t, "test.go", location.File)
-	assert.Equal(t, 10, location.Line)     // Should remain 1-indexed
-	assert.Equal(t, 5, location.Character) // Should remain 1-indexed
+	assert.Equal(t, 10, location.DisplayLine) // Display line
+	assert.Equal(t, 5, location.DisplayChar)  // Display character
 }
 
 func TestSymbolAnchor_ToSymbolLocation_Invalid(t *testing.T) {
@@ -174,22 +174,22 @@ func TestSymbolAnchor_ToSymbolLocation_Invalid(t *testing.T) {
 
 func TestSymbolLocation_ToAnchor(t *testing.T) {
 	location := SymbolLocation{
-		File:      "test.go",
-		Line:      10, // 1-indexed
-		Character: 5,  // 1-indexed
+		File:        "test.go",
+		DisplayLine: 10, // Display line
+		DisplayChar: 5,  // Display character
 	}
 
 	anchor := location.ToAnchor()
-	expected := "anchor://test.go#10:5" // Should remain 1-indexed
+	expected := "go://test.go#10:5" // Display coordinates
 	assert.Equal(t, expected, anchor.String())
 }
 
 func TestRoundTrip(t *testing.T) {
 	// Test that converting location -> anchor -> location preserves data
 	originalLocation := SymbolLocation{
-		File:      "src/main.go",
-		Line:      15,
-		Character: 8,
+		File:        "src/main.go",
+		DisplayLine: 15,
+		DisplayChar: 8,
 	}
 
 	anchor := originalLocation.ToAnchor()
@@ -199,12 +199,12 @@ func TestRoundTrip(t *testing.T) {
 	assert.Equal(t, originalLocation, convertedLocation)
 }
 
-func TestSymbolAnchor_ToLSPPosition(t *testing.T) {
-	anchor := SymbolAnchor("anchor://test.go#10:5")
-	file, line, character, err := anchor.ToLSPPosition()
+func TestSymbolAnchor_ToFilePosition(t *testing.T) {
+	anchor := SymbolAnchor("go://test.go#10:5")
+	file, position, err := anchor.ToFilePosition()
 
 	assert.NoError(t, err)
 	assert.Equal(t, "test.go", file)
-	assert.Equal(t, 9, line)      // Should be 0-indexed for LSP
-	assert.Equal(t, 4, character) // Should be 0-indexed for LSP
+	assert.Equal(t, 9, position.Line)      // LSP line (0-indexed)
+	assert.Equal(t, 4, position.Character) // LSP character (0-indexed)
 }

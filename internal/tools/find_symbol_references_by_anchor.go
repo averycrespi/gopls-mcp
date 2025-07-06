@@ -28,32 +28,32 @@ func NewFindSymbolReferencesByAnchorTool(client types.Client, config types.Confi
 // GetTool returns the MCP tool definition
 func (t *FindSymbolReferencesByAnchorTool) GetTool() mcp.Tool {
 	tool := mcp.NewTool("find_symbol_references_by_anchor",
-		mcp.WithDescription("Find all references to a symbol by its anchor in the Go workspace"),
-		mcp.WithString("anchor", mcp.Required(), mcp.Description("Symbol anchor in format 'anchor://FILE#LINE:CHAR' (1-indexed coordinates)")),
+		mcp.WithDescription("Find all references to a symbol by its anchor in the Go workspace, returning a list of symbol references"),
+		mcp.WithString(
+			"symbol_anchor",
+			mcp.Required(),
+			mcp.Description("Symbol anchor, which is included in tool responses. Don't try to parse or generate this yourself."),
+		),
 	)
 	return tool
 }
 
 // Handle processes the tool request
 func (t *FindSymbolReferencesByAnchorTool) Handle(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	anchorStr := mcp.ParseString(req, "anchor", "")
+	anchorStr := mcp.ParseString(req, "symbol_anchor", "")
 	if anchorStr == "" {
-		return mcp.NewToolResultError("anchor parameter is required"), nil
+		return mcp.NewToolResultError("symbol_anchor parameter is required"), nil
 	}
 
 	// Parse and validate the anchor
 	anchor := results.SymbolAnchor(anchorStr)
-	file, line, character, err := anchor.ToLSPPosition()
+	file, position, err := anchor.ToFilePosition()
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Invalid anchor format: %v", err)), nil
 	}
 
 	// Convert to absolute path and URI for LSP
 	absPath := PathToUri(file, t.config.WorkspaceRoot)
-	position := types.Position{
-		Line:      line,      // Already converted to 0-indexed by ToLSPPosition
-		Character: character, // Already converted to 0-indexed by ToLSPPosition
-	}
 
 	// Find references at the specific anchor location
 	locations, err := t.client.FindReferences(ctx, absPath, position)
@@ -67,9 +67,9 @@ func (t *FindSymbolReferencesByAnchorTool) Handle(ctx context.Context, req mcp.C
 	var references []results.SymbolLocation
 	for _, loc := range locations {
 		references = append(references, results.SymbolLocation{
-			File:      GetRelativePath(UriToPath(loc.URI), t.config.WorkspaceRoot),
-			Line:      loc.Range.Start.Line + 1,      // convert to 1-indexed line numbers
-			Character: loc.Range.Start.Character + 1, // convert to 1-indexed character numbers
+			File:        GetRelativePath(UriToPath(loc.URI), t.config.WorkspaceRoot),
+			DisplayLine: loc.Range.Start.Line + 1,      // Convert LSP coordinates to display line
+			DisplayChar: loc.Range.Start.Character + 1, // Convert LSP coordinates to display character
 		})
 	}
 
@@ -92,11 +92,11 @@ func (t *FindSymbolReferencesByAnchorTool) Handle(ctx context.Context, req mcp.C
 		}
 	}
 
-	// Create the result with the original anchor location (convert back to 1-indexed for display)
+	// Create the result with the original anchor location using display coordinates
 	originalLocation := results.SymbolLocation{
-		File:      file,
-		Line:      line + 1,      // convert back to 1-indexed for display
-		Character: character + 1, // convert back to 1-indexed for display
+		File:        file,
+		DisplayLine: position.Line + 1,      // Convert LSP coordinates to display line
+		DisplayChar: position.Character + 1, // Convert LSP coordinates to display character
 	}
 
 	result := results.SymbolReferenceResult{
