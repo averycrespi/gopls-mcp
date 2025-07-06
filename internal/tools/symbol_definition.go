@@ -12,6 +12,10 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
+const (
+	definitionContextLines = 3
+)
+
 // SymbolDefinitionTool handles symbol definition requests
 type SymbolDefinitionTool struct {
 	client types.Client
@@ -47,74 +51,46 @@ func (t *SymbolDefinitionTool) Handle(ctx context.Context, req mcp.CallToolReque
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to search workspace symbols: %v", err)), nil
 	}
 
-	if len(symbols) == 0 {
-		result := results.SymbolDefinitionResult{
-			Query:   symbolName,
-			Count:   0,
-			Symbols: []results.SymbolDefinitionResultEntry{},
-		}
-		jsonBytes, _ := json.MarshalIndent(result, "", "  ")
-		return mcp.NewToolResultText(string(jsonBytes)), nil
-	}
-
-	// Build JSON result
-	result := results.SymbolDefinitionResult{
-		Query:   symbolName,
-		Count:   len(symbols),
-		Symbols: make([]results.SymbolDefinitionResultEntry, 0, len(symbols)),
-	}
-
+	var symbolResults []results.SymbolDefinitionResult
 	for _, sym := range symbols {
-		entry := results.SymbolDefinitionResultEntry{
+		definitions, err := t.client.GoToDefinition(ctx, sym.Location.URI, sym.Location.Range.Start)
+		if err != nil || len(definitions) == 0 {
+			continue
+		}
+
+		// Use the first definition matching the symbol
+		def := definitions[0]
+		entry := results.SymbolDefinitionResult{
 			Name: sym.Name,
 			Kind: results.NewSymbolKind(sym.Kind),
 			Location: results.SymbolLocation{
-				File:      GetRelativePath(UriToPath(sym.Location.URI), t.config.WorkspaceRoot),
-				Line:      sym.Location.Range.Start.Line + 1,
-				Character: sym.Location.Range.Start.Character + 1,
+				File:      GetRelativePath(UriToPath(def.URI), t.config.WorkspaceRoot),
+				Line:      def.Range.Start.Line + 1,      // convert to 1-indexed line numbers
+				Character: def.Range.Start.Character + 1, // convert to 1-indexed character numbers
 			},
-			Definitions: make([]results.SymbolDefinitionInfo, 0),
 		}
 
-		// Get the definition for this symbol
-		definitions, err := t.client.GoToDefinition(ctx, sym.Location.URI, sym.Location.Range.Start)
-		if err != nil {
-			// Add error as documentation if we can't get definitions
-			entry.Definitions = append(entry.Definitions, results.SymbolDefinitionInfo{
-				Location:      entry.Location,
-				Documentation: fmt.Sprintf("Error getting definition: %v", err),
-			})
-		} else {
-			for _, def := range definitions {
-				defInfo := results.SymbolDefinitionInfo{
-					Location: results.SymbolLocation{
-						File:      GetRelativePath(UriToPath(def.URI), t.config.WorkspaceRoot),
-						Line:      def.Range.Start.Line + 1,
-						Character: def.Range.Start.Character + 1,
-					},
-				}
+		// Try to enhance with hover information
+		if hoverInfo, hoverErr := t.client.GetHoverInfo(ctx, def.URI, def.Range.Start); hoverErr == nil && hoverInfo != "" {
+			entry.Documentation = hoverInfo
+		}
 
-				// Try to enhance the definition with hover information
-				if hoverInfo, hoverErr := t.client.GetHoverInfo(ctx, def.URI, def.Range.Start); hoverErr == nil && hoverInfo != "" {
-					defInfo.Documentation = hoverInfo
-				}
-
-				// Try to enhance the definition with source context
-				if file, err := os.Open(UriToPath(def.URI)); err == nil {
-					defer file.Close()
-					if sourceContext, contextErr := ReadSourceContext(file, def.Range.Start.Line, 3); contextErr == nil {
-						defInfo.Source = sourceContext
-					}
-				}
-
-				entry.Definitions = append(entry.Definitions, defInfo)
+		// Try to enhance with source context
+		if file, err := os.Open(UriToPath(def.URI)); err == nil {
+			defer file.Close()
+			if sourceContext, contextErr := ReadSourceContext(file, def.Range.Start.Line, definitionContextLines); contextErr == nil {
+				entry.Source = sourceContext
 			}
 		}
 
-		result.Symbols = append(result.Symbols, entry)
+		symbolResults = append(symbolResults, entry)
 	}
 
-	jsonBytes, err := json.MarshalIndent(result, "", "  ")
+	if len(symbolResults) == 0 {
+		return mcp.NewToolResultText(fmt.Sprintf("No results for symbol name: %s", symbolName)), nil
+	}
+
+	jsonBytes, err := json.MarshalIndent(symbolResults, "", "  ")
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal JSON: %v", err)), nil
 	}

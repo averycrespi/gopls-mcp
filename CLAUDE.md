@@ -52,7 +52,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - `symbol_kind.go` - SymbolKind enum with LSP mapping (file, function, struct, etc.)
 - `symbol_location.go` - Location information with file paths and positions
 - `source_context.go` - Source code context with line highlighting
-- `symbol_definition.go` - Definition result types with multiple definition support
+- `symbol_definition.go` - Simplified definition result type with direct symbol information
 
 **Interface Design**: The codebase uses clean interfaces to separate concerns:
 - `types.Client` - Defines LSP client operations including Start/Stop (implemented by GoplsClient)

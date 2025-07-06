@@ -80,10 +80,12 @@ Find the definition of a symbol by name.
 **Parameters:**
 - `symbol_name` (string): Symbol name to find the definition for
 
-**Response:** JSON object containing:
-- `query`: The search query used
-- `count`: Number of symbols found
-- `symbols`: Array of symbol definition entries with location, documentation, and source code context
+**Response:** JSON array of symbol definition objects, each containing:
+- `name`: Symbol name
+- `kind`: Symbol type (function, struct, method, etc.)
+- `location`: File path, line, and character position
+- `documentation`: Hover information (if available)
+- `source`: Source code context with line highlighting (if available)
 
 ### find_references
 Find all references to a symbol.

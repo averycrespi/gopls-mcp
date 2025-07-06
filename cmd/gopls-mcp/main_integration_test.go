@@ -168,30 +168,21 @@ func parseToolResult(t *testing.T, result map[string]any) string {
 
 // validateSymbolDefinitionResult validates the structure of a symbol definition result
 func validateSymbolDefinitionResult(t *testing.T, jsonContent string, expectedSymbol string) {
-	var result results.SymbolDefinitionResult
-	err := json.Unmarshal([]byte(jsonContent), &result)
-	assert.NoError(t, err, "Should be able to unmarshal symbol definition result")
+	var results []results.SymbolDefinitionResult
+	err := json.Unmarshal([]byte(jsonContent), &results)
+	assert.NoError(t, err, "Should be able to unmarshal symbol definition results")
 
 	// Validate basic structure
-	assert.Equal(t, expectedSymbol, result.Query, "Query should match expected symbol")
-	assert.Greater(t, result.Count, 0, "Should have found at least one symbol")
-	assert.Len(t, result.Symbols, result.Count, "Symbol count should match actual symbols")
+	assert.Greater(t, len(results), 0, "Should have found at least one symbol")
 
 	// Validate first symbol
-	assert.NotEmpty(t, result.Symbols, "Should have at least one symbol")
-	firstSymbol := result.Symbols[0]
+	firstSymbol := results[0]
 	assert.Equal(t, expectedSymbol, firstSymbol.Name, "First symbol name should match")
 	assert.NotEmpty(t, firstSymbol.Kind, "Symbol kind should not be empty")
 	assert.NotEmpty(t, firstSymbol.Location.File, "Symbol file should not be empty")
 	assert.Greater(t, firstSymbol.Location.Line, 0, "Symbol line should be positive")
-	assert.NotEmpty(t, firstSymbol.Definitions, "Should have at least one definition")
-
-	// Validate first definition
-	firstDef := firstSymbol.Definitions[0]
-	assert.NotEmpty(t, firstDef.Location.File, "Definition file should not be empty")
-	assert.Greater(t, firstDef.Location.Line, 0, "Definition line should be positive")
-	if firstDef.Source != nil {
-		assert.NotEmpty(t, firstDef.Source.Lines, "Source context should have lines")
+	if firstSymbol.Source != nil {
+		assert.NotEmpty(t, firstSymbol.Source.Lines, "Source context should have lines")
 	}
 }
 
