@@ -166,8 +166,8 @@ func parseToolResult(t *testing.T, result map[string]any) string {
 	return ""
 }
 
-// validateFindSymbolDefinitionsByNameResult validates the structure of a find symbol definitions by name result
-func validateFindSymbolDefinitionsByNameResult(t *testing.T, jsonContent string, expectedSymbol string) {
+// validateFindSymbolDefinitionsByNameToolResult validates the structure of a find symbol definitions by name result
+func validateFindSymbolDefinitionsByNameToolResult(t *testing.T, jsonContent string, expectedSymbol string) {
 	var result results.FindSymbolDefinitionsByNameToolResult
 	err := json.Unmarshal([]byte(jsonContent), &result)
 	assert.NoError(t, err, "Should be able to unmarshal find symbol definitions by name tool result")
@@ -187,24 +187,30 @@ func validateFindSymbolDefinitionsByNameResult(t *testing.T, jsonContent string,
 	assert.True(t, firstSymbol.Anchor.IsValid(), "Symbol anchor should be valid")
 }
 
-// validateSymbolReferenceResult validates the structure of a symbol reference result
-func validateSymbolReferenceResult(t *testing.T, jsonContent string, expectedAnchor string) {
-	var result results.SymbolReferenceResult
+// validateFindSymbolReferencesByAnchorToolResult validates the structure of a find symbol references by anchor result
+func validateFindSymbolReferencesByAnchorToolResult(t *testing.T, jsonContent string, expectedAnchor string) {
+	var result results.FindSymbolReferencesByAnchorToolResult
 	err := json.Unmarshal([]byte(jsonContent), &result)
-	assert.NoError(t, err, "Should be able to unmarshal symbol reference result")
+	assert.NoError(t, err, "Should be able to unmarshal find symbol references by anchor result")
 
 	// Validate basic structure
-	assert.NotEmpty(t, result.Name, "Symbol name should not be empty")
-	assert.NotEmpty(t, result.Kind, "Symbol kind should not be empty")
-	assert.NotEmpty(t, result.Location.File, "Symbol file should not be empty")
-	assert.Greater(t, result.Location.DisplayLine, 0, "Symbol line should be positive")
-	assert.NotEmpty(t, result.Anchor, "Symbol anchor should not be empty")
-	assert.True(t, result.Anchor.IsValid(), "Symbol anchor should be valid")
+	assert.NotEmpty(t, result.SymbolAnchor, "Symbol anchor should not be empty")
+	assert.NotEmpty(t, result.Message, "Message should not be empty")
 	assert.NotNil(t, result.References, "References should not be nil")
 
 	// Validate that the anchor matches expected format
 	if expectedAnchor != "" {
-		assert.Equal(t, expectedAnchor, result.Anchor.String(), "Anchor should match expected value")
+		assert.Equal(t, expectedAnchor, result.SymbolAnchor, "Anchor should match expected value")
+	}
+
+	// If we have references, validate the first one
+	if len(result.References) > 0 {
+		firstRef := result.References[0]
+		assert.NotEmpty(t, firstRef.Location.File, "Reference file should not be empty")
+		assert.Greater(t, firstRef.Location.DisplayLine, 0, "Reference line should be positive")
+		assert.Greater(t, firstRef.Location.DisplayChar, 0, "Reference character should be positive")
+		assert.NotEmpty(t, firstRef.Anchor, "Reference anchor should not be empty")
+		assert.True(t, firstRef.Anchor.IsValid(), "Reference anchor should be valid")
 	}
 }
 
@@ -360,7 +366,7 @@ func TestMCPServerIntegration(t *testing.T) {
 
 		// Parse and validate the JSON response structure
 		contentStr := parseToolResult(t, result)
-		validateFindSymbolDefinitionsByNameResult(t, contentStr, "NewCalculator")
+		validateFindSymbolDefinitionsByNameToolResult(t, contentStr, "NewCalculator")
 
 		t.Logf("Symbol definition content: %v", contentStr)
 	})
@@ -389,7 +395,7 @@ func TestMCPServerIntegration(t *testing.T) {
 
 		// Parse and validate the JSON response structure
 		contentStr := parseToolResult(t, result)
-		validateSymbolReferenceResult(t, contentStr, "go://calculator.go#6:6")
+		validateFindSymbolReferencesByAnchorToolResult(t, contentStr, "go://calculator.go#6:6")
 
 		t.Logf("Find symbol references by anchor content: %v", contentStr)
 	})

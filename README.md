@@ -154,15 +154,14 @@ Find all references to a symbol by its precise anchor location in the Go workspa
 - `symbol_anchor` (string): Symbol anchor in format `go://FILE#LINE:CHAR` (display coordinates)
 
 **Response:** JSON object containing:
-- `name`: Symbol name
-- `kind`: Symbol type (function, struct, method, etc.)
-- `location`: File path, line, and character position of the symbol definition
-- `anchor`: Symbol anchor in format `go://FILE#LINE:CHAR` (display coordinates)
-- `hover_info`: Hover information from the language server (if available)
-- `references`: Array of reference location objects, each containing:
-  - `file`: Relative file path from workspace root
-  - `line`: Display line number (starts at 1, matches editor display)
-  - `character`: Display character position (starts at 1, matches editor display)
+- `symbol_anchor`: The input symbol anchor used for the search
+- `message`: Summary message about the results (e.g., "Found 8 references for the symbol anchor." or "No references found for the symbol anchor.")
+- `references`: Array of reference objects, each containing:
+  - `location`: Reference location with:
+    - `file`: Relative file path from workspace root
+    - `line`: Display line number (starts at 1, matches editor display)  
+    - `character`: Display character position (starts at 1, matches editor display)
+  - `anchor`: Symbol anchor for this specific reference location in format `go://FILE#LINE:CHAR`
 
 **Note:** This tool requires a precise anchor from the output of `find_symbol_definitions_by_name` or `list_symbols_in_file` tools to identify the exact symbol instance.
 

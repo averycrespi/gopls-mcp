@@ -1,11 +1,14 @@
 package results
 
-// SymbolReferenceResult represents a symbol reference result
-type SymbolReferenceResult struct {
-	Name       string           `json:"name"`
-	Kind       SymbolKind       `json:"kind"`
-	Location   SymbolLocation   `json:"location"`
-	Anchor     SymbolAnchor     `json:"anchor"`
-	HoverInfo  string           `json:"hover_info,omitempty"`
-	References []SymbolLocation `json:"references"`
+// FindSymbolReferencesByAnchorToolResult represents the result of the find symbol references by anchor tool
+type FindSymbolReferencesByAnchorToolResult struct {
+	SymbolAnchor string            `json:"symbol_anchor"`
+	Message      string            `json:"message"`
+	References   []SymbolReference `json:"references"`
+}
+
+// SymbolReference represents a symbol reference
+type SymbolReference struct {
+	Location SymbolLocation `json:"location"`
+	Anchor   SymbolAnchor   `json:"anchor"`
 }

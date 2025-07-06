@@ -61,7 +61,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - `symbol_location.go` - Location information with file paths and positions, plus anchor conversion
 - `symbol_anchor.go` - SymbolAnchor type for precise symbol identification with format `go://FILE#LINE:CHAR` (1-indexed coordinates)
 - `find_symbol_definitions_by_name.go` - FindSymbolDefinitionsByNameToolResult with searched symbol name, message, and SymbolDefinition array (includes anchors)
-- `find_symbol_references_by_anchor.go` - SymbolReferenceResult with anchor-based reference finding
+- `find_symbol_references_by_anchor.go` - FindSymbolReferencesByAnchorToolResult with simplified reference listing (anchor input, message, and SymbolReference array)
 - `list_symbols_in_file.go` - ListSymbolsInFileToolResult with file path, message, and hierarchical FileSymbol array (includes anchors)
 
 **Interface Design**: The codebase uses clean interfaces to separate concerns:
@@ -77,16 +77,16 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 **Error Handling**: LSP errors are wrapped and returned as MCP tool result errors with improved logging and specific error messages.
 
 **JSON Output**: All symbol tools return structured JSON responses with:
-- Type-safe SymbolKind enums (function, struct, method, etc.)
-- Rich metadata including hover info from the language server
+- Type-safe SymbolKind enums (function, struct, method, etc.) where applicable
+- Rich metadata including hover info from the language server (for definition tools)
 - Relative file paths from workspace root
 - Symbol anchors for precise identification (`go://FILE#LINE:CHAR` format)
-- Descriptive messages and metadata (e.g., file paths, symbol counts)
+- Descriptive messages and metadata (e.g., file paths, symbol counts, reference counts)
 
 **Symbol Anchor System**: Enables precise symbol identification and eliminates ambiguity:
 - Format: `go://FILE#LINE:CHAR` with display coordinates (matches editor display)
 - Generated for all SymbolDefinition and FileSymbol results
-- Used by `find_symbol_references_by_anchor` for exact reference finding
+- Used by `find_symbol_references_by_anchor` for exact reference finding, returning anchors for each reference location
 - Converts to LSP coordinates internally for protocol operations via `ToFilePosition()`
 - Uses `DisplayLine` and `DisplayChar` fields for clarity throughout codebase
 - Validates anchor format and coordinates before processing
