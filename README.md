@@ -10,7 +10,7 @@ gopls-mcp bridges the gap between LLMs and Go development by providing an MCP in
 
 ### Navigation Tools
 - **symbol_definition**: Find the definition of a symbol by name
-- **find_references**: Find all references to a symbol across the project
+- **symbol_references**: Find all references to a symbol across the project
 
 
 ## Installation
@@ -84,10 +84,9 @@ Find the definition of a symbol by name.
 - `name`: Symbol name
 - `kind`: Symbol type (function, struct, method, etc.)
 - `location`: File path, line, and character position
-- `documentation`: Hover information (if available)
 - `source`: Source code context with line highlighting (if available)
 
-### find_references
+### symbol_references
 Find all references to a symbol.
 
 **Parameters:**

@@ -242,7 +242,7 @@ func TestMCPServerIntegration(t *testing.T) {
 
 		expectedTools := []string{
 			"symbol_definition",
-			"find_references",
+			"symbol_references",
 		}
 
 		assert.Len(t, tools, len(expectedTools), "Should have exactly %d tools", len(expectedTools))
@@ -299,8 +299,8 @@ func TestMCPServerIntegration(t *testing.T) {
 	})
 
 
-	t.Run("FindReferences", func(t *testing.T) {
-		// Test find references on Calculator type in calculator.go
+	t.Run("SymbolReferences", func(t *testing.T) {
+		// Test symbol references on Calculator type in calculator.go
 		// calculator.go line 6: type Calculator struct {
 		//                            ^
 		//                        char 5 (0-based)
@@ -311,7 +311,7 @@ func TestMCPServerIntegration(t *testing.T) {
 			ID:      5,
 			Method:  "tools/call",
 			Params: map[string]any{
-				"name": "find_references",
+				"name": "symbol_references",
 				"arguments": map[string]any{
 					"file_path": calcFile,
 					"line":      5, // Zero-based: line 6 in editor
@@ -321,21 +321,21 @@ func TestMCPServerIntegration(t *testing.T) {
 		}
 
 		resp := server.sendRequest(t, req)
-		assert.Nil(t, resp.Error, "Find references should not return an error")
+		assert.Nil(t, resp.Error, "Symbol references should not return an error")
 
-		// Validate that we got find references content
+		// Validate that we got symbol references content
 		var result map[string]any
 		err := json.Unmarshal(resp.Result, &result)
-		assert.NoError(t, err, "Should be able to unmarshal find references result")
+		assert.NoError(t, err, "Should be able to unmarshal symbol references result")
 
 		content, ok := result["content"]
-		assert.True(t, ok, "Expected content in find references result")
+		assert.True(t, ok, "Expected content in symbol references result")
 
 		// Should contain reference information
 		contentStr := fmt.Sprintf("%v", content)
 		assert.Contains(t, contentStr, "reference", "Response should contain reference information")
 		assert.Contains(t, contentStr, "calculator.go", "Response should reference calculator.go file")
-		t.Logf("Find references content: %v", content)
+		t.Logf("Symbol references content: %v", content)
 	})
 
 }

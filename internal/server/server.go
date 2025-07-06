@@ -51,6 +51,6 @@ func (s *GoplsServer) registerTools() {
 	symbolDefTool := tools.NewSymbolDefinitionTool(s.goplsClient, s.config)
 	s.mcpServer.AddTool(symbolDefTool.GetTool(), symbolDefTool.Handle)
 
-	findRefsTool := tools.NewFindReferencesTool(s.goplsClient, s.config)
-	s.mcpServer.AddTool(findRefsTool.GetTool(), findRefsTool.Handle)
+	symbolRefsTool := tools.NewSymbolReferencesTool(s.goplsClient, s.config)
+	s.mcpServer.AddTool(symbolRefsTool.GetTool(), symbolRefsTool.Handle)
 }

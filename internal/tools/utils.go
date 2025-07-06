@@ -12,11 +12,6 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-// Tool names
-const (
-	ToolFindReferences = "find_references"
-)
-
 // PathToUri converts a file path to a file URI
 func PathToUri(filePath string, workspaceRoot string) string {
 	if strings.HasPrefix(filePath, "file://") {

@@ -45,7 +45,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 
 **Tool Registration**: Each MCP tool is implemented in its own file in `internal/tools/`:
 - `symbol_definition.go` - `symbol_definition` → LSP WorkspaceSymbol + Definition requests
-- `find_references.go` - `find_references` → LSP References request
+- `symbol_references.go` - `symbol_references` → LSP References request
 - `utils.go` - Shared utilities for path handling and position parsing
 
 **JSON Response Structure**: Structured output types in `internal/results/`:
@@ -68,7 +68,6 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 
 **JSON Output**: All symbol tools return structured JSON responses with:
 - Type-safe SymbolKind enums (function, struct, method, etc.)
-- Rich metadata including documentation from hover info
 - Source code context with line numbers and highlighting
 - Relative file paths from workspace root
 
