@@ -34,8 +34,8 @@ if [[ ! -f "./testdata/mcp_init.json" ]]; then
     exit 1
 fi
 
-if [[ ! -f "./testdata/${TOOL_NAME}_test.json" ]]; then
-    echo "Error: ${TOOL_NAME}_test.json not found in testdata/"
+if [[ ! -f "./testdata/${TOOL_NAME}.input.json" ]]; then
+    echo "Error: ${TOOL_NAME}.input.json not found in testdata/"
     exit 1
 fi
 
@@ -54,7 +54,7 @@ echo "=================================="
 OUTPUT=$(timeout 10s bash -c '{
     tr -d "\n" < ./testdata/mcp_init.json; echo "";
     sleep 1;
-    tr -d "\n" < ./testdata/'$TOOL_NAME'_test.json; echo "";
+    tr -d "\n" < ./testdata/'$TOOL_NAME'.input.json; echo "";
 } | ./bin/gopls-mcp -workspace-root ./testdata/example 2>/dev/null' || true)
 
 # Process the output
