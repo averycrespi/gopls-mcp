@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/averycrespi/gopls-mcp/internal/results"
 	"github.com/averycrespi/gopls-mcp/pkg/types"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -46,46 +47,46 @@ func (t *SymbolDefinitionTool) Handle(ctx context.Context, req mcp.CallToolReque
 	}
 
 	if len(symbols) == 0 {
-		result := SymbolDefinitionResult{
+		result := results.SymbolDefinitionResult{
 			Query:   symbol,
 			Count:   0,
-			Symbols: []SymbolDefinitionResultEntry{},
+			Symbols: []results.SymbolDefinitionResultEntry{},
 		}
 		jsonBytes, _ := json.MarshalIndent(result, "", "  ")
 		return mcp.NewToolResultText(string(jsonBytes)), nil
 	}
 
 	// Build JSON result
-	result := SymbolDefinitionResult{
+	result := results.SymbolDefinitionResult{
 		Query:   symbol,
 		Count:   len(symbols),
-		Symbols: make([]SymbolDefinitionResultEntry, 0, len(symbols)),
+		Symbols: make([]results.SymbolDefinitionResultEntry, 0, len(symbols)),
 	}
 
 	for _, sym := range symbols {
-		entry := SymbolDefinitionResultEntry{
+		entry := results.SymbolDefinitionResultEntry{
 			Name: sym.Name,
-			Kind: symbolKindToEnum(sym.Kind),
-			Location: SymbolLocation{
+			Kind: results.NewSymbolKind(sym.Kind),
+			Location: results.SymbolLocation{
 				File:      getRelativePath(uriToPath(sym.Location.URI), t.config.WorkspaceRoot),
 				Line:      sym.Location.Range.Start.Line + 1,
 				Character: sym.Location.Range.Start.Character + 1,
 			},
-			Definitions: make([]SymbolDefinitionInfo, 0),
+			Definitions: make([]results.SymbolDefinitionInfo, 0),
 		}
 
 		// Get the definition for this symbol
 		definitions, err := t.client.GoToDefinition(ctx, sym.Location.URI, sym.Location.Range.Start)
 		if err != nil {
 			// Add error as documentation if we can't get definitions
-			entry.Definitions = append(entry.Definitions, SymbolDefinitionInfo{
+			entry.Definitions = append(entry.Definitions, results.SymbolDefinitionInfo{
 				Location:      entry.Location,
 				Documentation: fmt.Sprintf("Error getting definition: %v", err),
 			})
 		} else {
 			for _, def := range definitions {
-				defInfo := SymbolDefinitionInfo{
-					Location: SymbolLocation{
+				defInfo := results.SymbolDefinitionInfo{
+					Location: results.SymbolLocation{
 						File:      getRelativePath(uriToPath(def.URI), t.config.WorkspaceRoot),
 						Line:      def.Range.Start.Line + 1,
 						Character: def.Range.Start.Character + 1,
@@ -99,7 +100,7 @@ func (t *SymbolDefinitionTool) Handle(ctx context.Context, req mcp.CallToolReque
 
 				// Try to get source context for definition
 				if contextStr, contextErr := getSymbolContext(def.URI, def.Range.Start.Line, def.Range.Start.Character, 3); contextErr == nil {
-					defInfo.Source = NewSourceContext(contextStr, def.Range.Start.Line)
+					defInfo.Source = results.NewSourceContext(contextStr, def.Range.Start.Line)
 				}
 
 				entry.Definitions = append(entry.Definitions, defInfo)

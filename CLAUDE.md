@@ -34,6 +34,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - `internal/client/client.go` - Gopls client that communicates with gopls via JSON-RPC
 - `internal/transport/transport.go` - JSON-RPC transport layer for LSP communication
 - `internal/tools/` - Individual tool implementations (one file per MCP tool)
+- `internal/results/` - JSON response types and formatting utilities
 - `pkg/types/` - Shared type definitions split into domain files:
   - `client.go` - LSP client interface and related types (includes Start/Stop methods)
   - `server.go` - Server interface for MCP operations (Serve method)
@@ -48,7 +49,14 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - `hover_info.go` - `hover_info` → LSP Hover request
 - `get_completion.go` - `get_completion` → LSP Completion request
 - `symbol_search.go` - `symbol_search` → LSP WorkspaceSymbol request
-- `tools.go` - Shared utilities for path handling and position parsing
+- `utils.go` - Shared utilities for path handling and position parsing
+
+**JSON Response Structure**: Structured output types in `internal/results/`:
+- `symbol_kind.go` - SymbolKind enum with LSP mapping (file, function, struct, etc.)
+- `symbol_location.go` - Location information with file paths and positions
+- `source_context.go` - Source code context with line highlighting
+- `symbol_search.go` - Search result types with metadata and documentation
+- `symbol_definition.go` - Definition result types with multiple definition support
 
 **Interface Design**: The codebase uses clean interfaces to separate concerns:
 - `types.Client` - Defines LSP client operations including Start/Stop (implemented by GoplsClient)
@@ -61,6 +69,12 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 **Path Handling**: All file paths are converted to absolute paths and file:// URIs for LSP communication.
 
 **Error Handling**: LSP errors are wrapped and returned as MCP tool result errors with improved logging and specific error messages.
+
+**JSON Output**: All symbol tools return structured JSON responses with:
+- Type-safe SymbolKind enums (function, struct, method, etc.)
+- Rich metadata including documentation from hover info
+- Source code context with line numbers and highlighting
+- Relative file paths from workspace root
 
 ## MCP Integration
 

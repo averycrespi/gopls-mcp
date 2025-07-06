@@ -76,17 +76,29 @@ Example configuration:
 
 ## Available MCP Tools
 
+All tools return structured JSON responses for easy programmatic consumption.
+
 ### symbol_definition
-Find the definition of a symbol.
+Find the definition of a symbol by name.
 
 **Parameters:**
 - `symbol` (string): Symbol name to find the definition for
+
+**Response:** JSON object containing:
+- `query`: The search query used
+- `count`: Number of symbols found
+- `symbols`: Array of symbol definition entries with location, documentation, and source code context
 
 ### symbol_search
 Search for symbols by name across the workspace.
 
 **Parameters:**
 - `symbol` (string): Symbol name to search for
+
+**Response:** JSON object containing:
+- `query`: The search query used  
+- `count`: Number of symbols found
+- `symbols`: Array of symbol entries with kind, location, documentation, and source code context
 
 ### find_references
 Find all references to a symbol.
@@ -143,7 +155,8 @@ gopls-mcp/
 │   ├── server/            # MCP server implementation (GoplsServer)
 │   ├── client/            # LSP client implementation (GoplsClient)
 │   ├── transport/         # JSON-RPC transport layer (JsonRpcTransport)
-│   └── tools/             # Individual MCP tool implementations
+│   ├── tools/             # Individual MCP tool implementations
+│   └── results/           # JSON response types and formatting
 ├── pkg/
 │   ├── types/             # Shared type definitions (client, server, config, transport)
 │   └── project/           # Project metadata

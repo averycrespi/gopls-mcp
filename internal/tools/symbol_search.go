@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/averycrespi/gopls-mcp/internal/results"
 	"github.com/averycrespi/gopls-mcp/pkg/types"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -46,40 +47,40 @@ func (t *SymbolSearchTool) Handle(ctx context.Context, req mcp.CallToolRequest) 
 	}
 
 	if len(symbols) == 0 {
-		result := SymbolSearchResult{
+		result := results.SymbolSearchResult{
 			Query:   symbol,
 			Count:   0,
-			Symbols: []SymbolSearchResultEntry{},
+			Symbols: []results.SymbolSearchResultEntry{},
 		}
 		jsonBytes, _ := json.MarshalIndent(result, "", "  ")
 		return mcp.NewToolResultText(string(jsonBytes)), nil
 	}
 
-	result := SymbolSearchResult{
+	result := results.SymbolSearchResult{
 		Query:   symbol,
 		Count:   len(symbols),
-		Symbols: make([]SymbolSearchResultEntry, 0, len(symbols)),
+		Symbols: make([]results.SymbolSearchResultEntry, 0, len(symbols)),
 	}
 
 	for _, sym := range symbols {
-		entry := SymbolSearchResultEntry{
+		entry := results.SymbolSearchResultEntry{
 			Name: sym.Name,
-			Kind: symbolKindToEnum(sym.Kind),
-			Location: SymbolLocation{
+			Kind: results.NewSymbolKind(sym.Kind),
+			Location: results.SymbolLocation{
 				File:      getRelativePath(uriToPath(sym.Location.URI), t.config.WorkspaceRoot),
 				Line:      sym.Location.Range.Start.Line + 1,
 				Character: sym.Location.Range.Start.Character + 1,
 			},
 		}
 
-		// Try to get hover information for additional details
+		// Try to enhance the result with hover information
 		if hoverInfo, err := t.client.Hover(ctx, sym.Location.URI, sym.Location.Range.Start); err == nil && hoverInfo != "" {
 			entry.Documentation = hoverInfo
 		}
 
-		// Try to get source context
+		// Try to enhance the result with source context
 		if contextStr, err := getSymbolContext(sym.Location.URI, sym.Location.Range.Start.Line, sym.Location.Range.Start.Character, 2); err == nil {
-			entry.Source = NewSourceContext(contextStr, sym.Location.Range.Start.Line)
+			entry.Source = results.NewSourceContext(contextStr, sym.Location.Range.Start.Line)
 		}
 
 		result.Symbols = append(result.Symbols, entry)
