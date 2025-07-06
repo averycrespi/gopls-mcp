@@ -14,6 +14,8 @@ type Client interface {
 	GetHoverInfo(ctx context.Context, uri string, position Position) (string, error)
 	FuzzyFindSymbol(ctx context.Context, query string) ([]SymbolInformation, error)
 	GetDocumentSymbols(ctx context.Context, uri string) ([]DocumentSymbol, error)
+	PrepareRename(ctx context.Context, uri string, position Position) (*PrepareRenameResult, error)
+	RenameSymbol(ctx context.Context, uri string, position Position, newName string) (*WorkspaceEdit, error)
 }
 
 // Position represents a position in a text document
@@ -49,4 +51,21 @@ type DocumentSymbol struct {
 	Range          Range            `json:"range"`
 	SelectionRange Range            `json:"selectionRange"`
 	Children       []DocumentSymbol `json:"children,omitempty"`
+}
+
+// PrepareRenameResult represents the result of a prepareRename request
+type PrepareRenameResult struct {
+	Range       Range  `json:"range"`
+	Placeholder string `json:"placeholder,omitempty"`
+}
+
+// TextEdit represents a textual edit applicable to a text document
+type TextEdit struct {
+	Range   Range  `json:"range"`
+	NewText string `json:"newText"`
+}
+
+// WorkspaceEdit represents changes to many resources managed in the workspace
+type WorkspaceEdit struct {
+	Changes map[string][]TextEdit `json:"changes,omitempty"`
 }

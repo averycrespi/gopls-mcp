@@ -61,6 +61,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - `find_symbol_definitions_by_name.go` - `find_symbol_definitions_by_name` → LSP WorkspaceSymbol + Definition requests with anchor generation
 - `find_symbol_references_by_anchor.go` - `find_symbol_references_by_anchor` → LSP References requests using precise anchor locations
 - `list_symbols_in_file.go` - `list_symbols_in_file` → LSP DocumentSymbol requests with hierarchical support and anchor generation
+- `rename_symbol_by_anchor.go` - `rename_symbol_by_anchor` → LSP PrepareRename + Rename requests for safe symbol renaming
 - `utils.go` - Shared utilities for path handling and position parsing
 
 **JSON Response Structure**: Structured output types in `internal/results/`:
@@ -70,6 +71,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - `find_symbol_definitions_by_name.go` - FindSymbolDefinitionsByNameToolResult with standardized structure (message, arguments with symbol_name, SymbolDefinition array)
 - `find_symbol_references_by_anchor.go` - FindSymbolReferencesByAnchorToolResult with standardized structure (message, arguments with symbol_anchor, SymbolReference array)
 - `list_symbols_in_file.go` - ListSymbolsInFileToolResult with standardized structure (message, arguments with file_path, hierarchical FileSymbol array)
+- `rename_symbol_by_anchor.go` - RenameSymbolByAnchorToolResult with standardized structure (message, arguments with symbol_anchor and new_name, FileEdit array with detailed edit information)
 
 **Interface Design**: The codebase uses clean interfaces to separate concerns:
 - `types.Client` - Defines LSP client operations including Start/Stop (implemented by GoplsClient)

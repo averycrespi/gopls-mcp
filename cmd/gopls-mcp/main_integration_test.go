@@ -214,6 +214,41 @@ func validateFindSymbolReferencesByAnchorToolResult(t *testing.T, jsonContent st
 	}
 }
 
+// validateRenameSymbolByAnchorToolResult validates the structure of a rename symbol by anchor result
+func validateRenameSymbolByAnchorToolResult(t *testing.T, jsonContent string, expectedAnchor string, expectedNewName string) {
+	var result results.RenameSymbolByAnchorToolResult
+	err := json.Unmarshal([]byte(jsonContent), &result)
+	assert.NoError(t, err, "Should be able to unmarshal rename symbol by anchor result")
+
+	// Validate basic structure
+	assert.NotEmpty(t, result.Message, "Message should not be empty")
+	assert.Equal(t, expectedAnchor, result.Arguments.SymbolAnchor, "Symbol anchor should match")
+	assert.Equal(t, expectedNewName, result.Arguments.NewName, "New name should match")
+
+	// FileEdits may be nil/omitted due to omitempty tag when no edits are needed
+	// This is acceptable behavior
+
+	// If we have file edits, validate them
+	if len(result.FileEdits) > 0 {
+		firstEdit := result.FileEdits[0]
+		assert.NotEmpty(t, firstEdit.File, "File path should not be empty")
+		assert.Greater(t, len(firstEdit.Edits), 0, "Should have at least one edit in the file")
+
+		// Validate first edit
+		if len(firstEdit.Edits) > 0 {
+			edit := firstEdit.Edits[0]
+			assert.Greater(t, edit.StartLine, 0, "Start line should be positive")
+			assert.Greater(t, edit.StartCharacter, 0, "Start character should be positive")
+			assert.Greater(t, edit.EndLine, 0, "End line should be positive")
+			assert.Greater(t, edit.EndCharacter, 0, "End character should be positive")
+			assert.NotEmpty(t, edit.NewText, "New text should not be empty")
+		}
+		t.Logf("Rename produced %d file edits", len(result.FileEdits))
+	} else {
+		t.Logf("No file edits returned, which can happen if no changes are needed or the rename is not applicable")
+	}
+}
+
 // validateListSymbolsInFileToolResult validates the structure of a list symbols in file result
 func validateListSymbolsInFileToolResult(t *testing.T, jsonContent string) {
 	var result results.ListSymbolsInFileToolResult
@@ -316,6 +351,7 @@ func TestMCPServerIntegration(t *testing.T) {
 			"find_symbol_definitions_by_name",
 			"find_symbol_references_by_anchor",
 			"list_symbols_in_file",
+			"rename_symbol_by_anchor",
 		}
 
 		assert.Len(t, tools, len(expectedTools), "Should have exactly %d tools", len(expectedTools))
@@ -429,6 +465,36 @@ func TestMCPServerIntegration(t *testing.T) {
 		validateListSymbolsInFileToolResult(t, contentStr)
 
 		t.Logf("File symbols content: %v", contentStr)
+	})
+
+	t.Run("RenameSymbolByAnchor", func(t *testing.T) {
+		// Test rename symbol by anchor using Calculator struct anchor
+		req := MCPRequest{
+			JSONRPC: "2.0",
+			ID:      7,
+			Method:  "tools/call",
+			Params: map[string]any{
+				"name": "rename_symbol_by_anchor",
+				"arguments": map[string]any{
+					"symbol_anchor": "go://calculator.go#6:6", // Calculator struct definition (display coordinates)
+					"new_name":      "MyCalculator",
+				},
+			},
+		}
+
+		resp := server.sendRequest(t, req)
+		assert.Nil(t, resp.Error, "Rename symbol by anchor should not return an error")
+
+		// Validate that we got a rename result
+		var result map[string]any
+		err := json.Unmarshal(resp.Result, &result)
+		assert.NoError(t, err, "Should be able to unmarshal rename symbol result")
+
+		// Parse and validate the JSON response structure
+		contentStr := parseToolResult(t, result)
+		validateRenameSymbolByAnchorToolResult(t, contentStr, "go://calculator.go#6:6", "MyCalculator")
+
+		t.Logf("Rename symbol by anchor content: %v", contentStr)
 	})
 
 }

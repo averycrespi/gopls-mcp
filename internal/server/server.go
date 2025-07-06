@@ -75,5 +75,9 @@ func (s *GoplsServer) registerTools() {
 	s.mcpServer.AddTool(listSymbolsInFileTool.GetTool(), listSymbolsInFileTool.Handle)
 	slog.Debug("Registered tool", "name", "list_symbols_in_file")
 
+	renameSymbolByAnchorTool := tools.NewRenameSymbolByAnchorTool(s.goplsClient, s.config)
+	s.mcpServer.AddTool(renameSymbolByAnchorTool.GetTool(), renameSymbolByAnchorTool.Handle)
+	slog.Debug("Registered tool", "name", "rename_symbol_by_anchor")
+
 	slog.Debug("Registered all MCP tools")
 }

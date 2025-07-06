@@ -310,7 +310,52 @@ func (c *GoplsClient) FormatDocument(ctx context.Context, uri string) ([]json.Ra
 	return edits, nil
 }
 
-func (c *GoplsClient) RenameSymbol(ctx context.Context, uri string, position types.Position, newName string) (map[string][]json.RawMessage, error) {
+func (c *GoplsClient) PrepareRename(ctx context.Context, uri string, position types.Position) (*types.PrepareRenameResult, error) {
+	slog.Debug("Preparing rename", "uri", uri, "line", position.Line, "character", position.Character)
+
+	params := map[string]any{
+		"textDocument": map[string]any{
+			"uri": uri,
+		},
+		"position": position,
+	}
+
+	response, err := c.transport.SendRequest("textDocument/prepareRename", params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare rename: %w", err)
+	}
+
+	// LSP prepareRename response can be null, Range, or {range, placeholder}
+	var rawResponse json.RawMessage
+	if err := json.Unmarshal(response, &rawResponse); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal prepareRename response: %w", err)
+	}
+
+	// Handle null response (rename not allowed)
+	if string(rawResponse) == "null" {
+		return nil, fmt.Errorf("rename not allowed at this position")
+	}
+
+	// Try to unmarshal as PrepareRenameResult (with placeholder)
+	var result types.PrepareRenameResult
+	if err := json.Unmarshal(rawResponse, &result); err != nil {
+		// If that fails, try to unmarshal as just Range
+		var rangeOnly types.Range
+		if err := json.Unmarshal(rawResponse, &rangeOnly); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal prepareRename response: %w", err)
+		}
+		result = types.PrepareRenameResult{
+			Range: rangeOnly,
+		}
+	}
+
+	slog.Debug("Rename prepared", "uri", uri, "range", result.Range, "placeholder", result.Placeholder)
+	return &result, nil
+}
+
+func (c *GoplsClient) RenameSymbol(ctx context.Context, uri string, position types.Position, newName string) (*types.WorkspaceEdit, error) {
+	slog.Debug("Renaming symbol", "uri", uri, "line", position.Line, "character", position.Character, "new_name", newName)
+
 	params := map[string]any{
 		"textDocument": map[string]any{
 			"uri": uri,
@@ -324,14 +369,30 @@ func (c *GoplsClient) RenameSymbol(ctx context.Context, uri string, position typ
 		return nil, fmt.Errorf("failed to rename symbol: %w", err)
 	}
 
-	var workspaceEdit struct {
-		Changes map[string][]json.RawMessage `json:"changes"`
-	}
-	if err := json.Unmarshal(response, &workspaceEdit); err != nil {
+	// LSP rename response can be null or WorkspaceEdit
+	var rawResponse json.RawMessage
+	if err := json.Unmarshal(response, &rawResponse); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal rename response: %w", err)
 	}
 
-	return workspaceEdit.Changes, nil
+	// Handle null response
+	if string(rawResponse) == "null" {
+		slog.Debug("No rename performed", "uri", uri)
+		return &types.WorkspaceEdit{Changes: make(map[string][]types.TextEdit)}, nil
+	}
+
+	var workspaceEdit types.WorkspaceEdit
+	if err := json.Unmarshal(rawResponse, &workspaceEdit); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal rename response: %w", err)
+	}
+
+	editCount := 0
+	for _, edits := range workspaceEdit.Changes {
+		editCount += len(edits)
+	}
+	slog.Debug("Symbol renamed", "uri", uri, "file_count", len(workspaceEdit.Changes), "edit_count", editCount)
+
+	return &workspaceEdit, nil
 }
 
 func (c *GoplsClient) GetDocumentSymbols(ctx context.Context, uri string) ([]types.DocumentSymbol, error) {

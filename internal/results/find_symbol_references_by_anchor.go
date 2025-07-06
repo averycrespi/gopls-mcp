@@ -4,7 +4,7 @@ package results
 type FindSymbolReferencesByAnchorToolResult struct {
 	Message    string                               `json:"message"`
 	Arguments  FindSymbolReferencesByAnchorToolArgs `json:"arguments"`
-	References []SymbolReference                    `json:"references"`
+	References []SymbolReference                    `json:"references,omitempty"`
 }
 
 // FindSymbolReferencesByAnchorToolArgs represents the arguments for the find symbol references by anchor tool

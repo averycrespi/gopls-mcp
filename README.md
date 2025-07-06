@@ -28,11 +28,12 @@ This enables LLMs to work with Go code the same way IDEs do - with full semantic
 
 ## Tools
 
-| Tool                               | Purpose                                           | Input                    | Output                                                  |
-| ---------------------------------- | ------------------------------------------------- | ------------------------ | ------------------------------------------------------- |
-| `list_symbols_in_file`             | List all symbols in a Go file with hierarchy      | `file_path` (string)     | Hierarchical list of file symbols                       |
-| `find_symbol_definitions_by_name`  | Find symbol definitions by name with fuzzy search | `symbol_name` (string)   | List of symbol definitions which fuzzily-match the name |
-| `find_symbol_references_by_anchor` | Find all references to a specific symbol instance | `symbol_anchor` (string) | List of symbol references for the anchor                |
+| Tool                               | Purpose                                           | Input                                        | Output                                                  |
+| ---------------------------------- | ------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------- |
+| `list_symbols_in_file`             | List all symbols in a Go file with hierarchy      | `file_path` (string)                         | Hierarchical list of file symbols                       |
+| `find_symbol_definitions_by_name`  | Find symbol definitions by name with fuzzy search | `symbol_name` (string)                       | List of symbol definitions which fuzzily-match the name |
+| `find_symbol_references_by_anchor` | Find all references to a specific symbol instance | `symbol_anchor` (string)                     | List of symbol references for the anchor                |
+| `rename_symbol_by_anchor`          | Rename a symbol across the entire workspace       | `symbol_anchor` (string), `new_name` (string) | List of file edits showing all changes made             |
 
 All tools return structured JSON responses with precise location information and symbol anchors for disambiguation.
 
@@ -172,6 +173,34 @@ Find all references to a symbol by its precise anchor location in the Go workspa
   - `anchor`: Symbol anchor for this specific reference location in format `go://FILE#LINE:CHAR`
 
 **Note:** This tool requires a precise anchor from the output of `find_symbol_definitions_by_name` or `list_symbols_in_file` tools to identify the exact symbol instance.
+
+### Tool: rename_symbol_by_anchor
+Rename a symbol by its precise anchor location across the entire Go workspace.
+
+**Parameters:**
+- `symbol_anchor` (string): Symbol anchor in format `go://FILE#LINE:CHAR` (display coordinates)
+- `new_name` (string): New name for the symbol (must be a valid Go identifier)
+
+**Response:** JSON object containing:
+- `message`: Summary message about the results (e.g., "Successfully renamed symbol to 'NewName' with 5 edits across 3 files.")
+- `arguments`: Input arguments echoed back with:
+  - `symbol_anchor`: The input symbol anchor used for the rename
+  - `new_name`: The new name for the symbol
+- `file_edits`: Array of file edit objects (may be empty), each containing:
+  - `file`: Relative file path from workspace root
+  - `edits`: Array of edit objects, each with:
+    - `start_line`: Display line number where edit starts (1-indexed)
+    - `start_character`: Display character position where edit starts (1-indexed)
+    - `end_line`: Display line number where edit ends (1-indexed)
+    - `end_character`: Display character position where edit ends (1-indexed)
+    - `old_text`: The text being replaced
+    - `new_text`: The replacement text
+
+**Notes:** 
+- This tool uses gopls's rename functionality which includes validation to prevent breaking changes
+- The rename will fail if it would introduce compilation errors
+- Go keywords cannot be used as new names
+- The tool performs a prepareRename check first to ensure the rename is valid
 
 ## Development
 

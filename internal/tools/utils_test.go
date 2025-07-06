@@ -150,3 +150,41 @@ func TestGetRelativePath(t *testing.T) {
 		})
 	}
 }
+
+func TestIsValidGoIdentifier(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		// Valid identifiers
+		{"simple identifier", "foo", true},
+		{"with numbers", "foo123", true},
+		{"with underscore", "foo_bar", true},
+		{"starting with underscore", "_foo", true},
+		{"single letter", "x", true},
+		{"capital letters", "FooBar", true},
+		{"all caps", "FOO_BAR", true},
+
+		// Invalid identifiers
+		{"empty string", "", false},
+		{"starting with number", "123foo", false},
+		{"with hyphen", "foo-bar", false},
+		{"with space", "foo bar", false},
+		{"with dot", "foo.bar", false},
+		{"keyword break", "break", false},
+		{"keyword func", "func", false},
+		{"keyword type", "type", false},
+		{"keyword var", "var", false},
+		{"keyword interface", "interface", false},
+		{"special characters", "foo@bar", false},
+		{"unicode", "foo你好", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsValidGoIdentifier(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
