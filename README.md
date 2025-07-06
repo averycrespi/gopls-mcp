@@ -81,7 +81,6 @@ Find the definition of a symbol by name.
 - `kind`: Symbol type (function, struct, method, etc.)
 - `location`: File path, line, and character position
 - `documentation`: Hover information (if available)
-- `source`: Source code context with line highlighting (if available)
 
 ### symbol_references
 Find all references to a symbol.
@@ -94,7 +93,6 @@ Find all references to a symbol.
 - `kind`: Symbol type (function, struct, method, etc.)
 - `location`: File path, line, and character position of the symbol definition
 - `documentation`: Hover information (if available)
-- `source`: Source code context with line highlighting (if available)
 - `references`: Array of locations where the symbol is referenced
 
 ### file_symbols

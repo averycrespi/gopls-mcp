@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/averycrespi/gopls-mcp/internal/results"
@@ -13,9 +12,6 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-const (
-	definitionContextLines = 0 // disable extra context for now
-)
 
 // SymbolDefinitionTool handles symbol definition requests
 type SymbolDefinitionTool struct {
@@ -79,14 +75,6 @@ func (t *SymbolDefinitionTool) Handle(ctx context.Context, req mcp.CallToolReque
 		// Try to enhance with hover information
 		if hoverInfo, err := t.client.GetHoverInfo(ctx, def.URI, def.Range.Start); err == nil && hoverInfo != "" {
 			entry.Documentation = hoverInfo
-		}
-
-		// Try to enhance with source context
-		if file, err := os.Open(UriToPath(def.URI)); err == nil {
-			defer file.Close()
-			if sourceContext, contextErr := ReadSourceContext(file, def.Range.Start.Line, definitionContextLines); contextErr == nil {
-				entry.Source = sourceContext
-			}
 		}
 
 		symbolResults = append(symbolResults, entry)

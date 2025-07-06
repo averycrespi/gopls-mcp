@@ -52,7 +52,6 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 **JSON Response Structure**: Structured output types in `internal/results/`:
 - `symbol_kind.go` - SymbolKind enum with LSP mapping (file, function, struct, etc.)
 - `symbol_location.go` - Location information with file paths and positions
-- `source_context.go` - Source code context with line highlighting
 - `symbol_definition.go` - Definition result type with symbol information
 - `symbol_reference.go` - Reference result type with symbol and reference locations
 - `file_symbol.go` - File symbol result type with hierarchical structure
@@ -72,7 +71,6 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 **JSON Output**: All symbol tools return structured JSON responses with:
 - Type-safe SymbolKind enums (function, struct, method, etc.)
 - Rich metadata including documentation from hover info
-- Source code context with line numbers and highlighting
 - Relative file paths from workspace root
 
 **Hierarchical Symbol Support**: The `file_symbols` tool provides full hierarchical support for Go symbols:

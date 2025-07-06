@@ -181,9 +181,6 @@ func validateSymbolDefinitionResult(t *testing.T, jsonContent string, expectedSy
 	assert.NotEmpty(t, firstSymbol.Kind, "Symbol kind should not be empty")
 	assert.NotEmpty(t, firstSymbol.Location.File, "Symbol file should not be empty")
 	assert.Greater(t, firstSymbol.Location.Line, 0, "Symbol line should be positive")
-	if firstSymbol.Source != nil {
-		assert.NotEmpty(t, firstSymbol.Source.Lines, "Source context should have lines")
-	}
 }
 
 // validateSymbolReferenceResult validates the structure of a symbol reference result
@@ -202,9 +199,6 @@ func validateSymbolReferenceResult(t *testing.T, jsonContent string, expectedSym
 	assert.NotEmpty(t, firstSymbol.Location.File, "Symbol file should not be empty")
 	assert.Greater(t, firstSymbol.Location.Line, 0, "Symbol line should be positive")
 	assert.NotNil(t, firstSymbol.References, "References should not be nil")
-	if firstSymbol.Source != nil {
-		assert.NotEmpty(t, firstSymbol.Source.Lines, "Source context should have lines")
-	}
 }
 
 // validateFileSymbolResult validates the structure of a file symbol result
