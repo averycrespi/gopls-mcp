@@ -287,7 +287,7 @@ func TestMCPServerIntegration(t *testing.T) {
 			Params: map[string]any{
 				"name": "symbol_definition",
 				"arguments": map[string]any{
-					"symbol": "NewCalculator",
+					"symbol_name": "NewCalculator",
 				},
 			},
 		}

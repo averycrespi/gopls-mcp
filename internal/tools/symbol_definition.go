@@ -30,26 +30,26 @@ func NewSymbolDefinitionTool(client types.Client, config types.Config) *SymbolDe
 func (t *SymbolDefinitionTool) GetTool() mcp.Tool {
 	tool := mcp.NewTool("symbol_definition",
 		mcp.WithDescription("Find the definition of a symbol in Go code"),
-		mcp.WithString("symbol", mcp.Required(), mcp.Description("Symbol name to find the definition for")),
+		mcp.WithString("symbol_name", mcp.Required(), mcp.Description("Symbol name to find the definition for")),
 	)
 	return tool
 }
 
 // Handle processes the tool request
 func (t *SymbolDefinitionTool) Handle(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	symbol := mcp.ParseString(req, "symbol", "")
-	if symbol == "" {
-		return mcp.NewToolResultError("symbol parameter is required"), nil
+	symbolName := mcp.ParseString(req, "symbol_name", "")
+	if symbolName == "" {
+		return mcp.NewToolResultError("symbol_name parameter is required"), nil
 	}
 
-	symbols, err := t.client.FuzzyFindSymbol(ctx, symbol)
+	symbols, err := t.client.FuzzyFindSymbol(ctx, symbolName)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to search workspace symbols: %v", err)), nil
 	}
 
 	if len(symbols) == 0 {
 		result := results.SymbolDefinitionResult{
-			Query:   symbol,
+			Query:   symbolName,
 			Count:   0,
 			Symbols: []results.SymbolDefinitionResultEntry{},
 		}
@@ -59,7 +59,7 @@ func (t *SymbolDefinitionTool) Handle(ctx context.Context, req mcp.CallToolReque
 
 	// Build JSON result
 	result := results.SymbolDefinitionResult{
-		Query:   symbol,
+		Query:   symbolName,
 		Count:   len(symbols),
 		Symbols: make([]results.SymbolDefinitionResultEntry, 0, len(symbols)),
 	}

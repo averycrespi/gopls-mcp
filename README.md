@@ -78,7 +78,7 @@ All tools return structured JSON responses for easy programmatic consumption.
 Find the definition of a symbol by name.
 
 **Parameters:**
-- `symbol` (string): Symbol name to find the definition for
+- `symbol_name` (string): Symbol name to find the definition for
 
 **Response:** JSON object containing:
 - `query`: The search query used
