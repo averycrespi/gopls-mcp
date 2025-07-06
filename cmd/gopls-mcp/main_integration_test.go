@@ -299,7 +299,7 @@ func TestMCPServerIntegration(t *testing.T) {
 
 		expectedTools := []string{
 			"find_symbol_definitions_by_name",
-			"symbol_references",
+			"find_symbol_references_by_anchor",
 			"list_symbols_in_file",
 		}
 
@@ -356,14 +356,14 @@ func TestMCPServerIntegration(t *testing.T) {
 		t.Logf("Symbol definition content: %v", contentStr)
 	})
 
-	t.Run("SymbolReferences", func(t *testing.T) {
-		// Test symbol references by searching for "Calculator" symbol
+	t.Run("FindSymbolReferencesByAnchor", func(t *testing.T) {
+		// Test find symbol references by anchor by searching for "Calculator" symbol
 		req := MCPRequest{
 			JSONRPC: "2.0",
 			ID:      5,
 			Method:  "tools/call",
 			Params: map[string]any{
-				"name": "symbol_references",
+				"name": "find_symbol_references_by_anchor",
 				"arguments": map[string]any{
 					"symbol_name": "Calculator",
 				},
@@ -371,7 +371,7 @@ func TestMCPServerIntegration(t *testing.T) {
 		}
 
 		resp := server.sendRequest(t, req)
-		assert.Nil(t, resp.Error, "Symbol references should not return an error")
+		assert.Nil(t, resp.Error, "Find symbol references by anchor should not return an error")
 
 		// Validate that we got a references result
 		var result map[string]any
@@ -382,7 +382,7 @@ func TestMCPServerIntegration(t *testing.T) {
 		contentStr := parseToolResult(t, result)
 		validateSymbolReferenceResult(t, contentStr, "Calculator")
 
-		t.Logf("Symbol references content: %v", contentStr)
+		t.Logf("Find symbol references by anchor content: %v", contentStr)
 	})
 
 	t.Run("FileSymbols", func(t *testing.T) {

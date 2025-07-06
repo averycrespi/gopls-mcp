@@ -12,31 +12,31 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-// SymbolReferencesTool handles symbol-references requests
-type SymbolReferencesTool struct {
+// FindSymbolReferencesByAnchorTool handles find symbol references by anchor requests
+type FindSymbolReferencesByAnchorTool struct {
 	client types.Client
 	config types.Config
 }
 
-// NewSymbolReferencesTool creates a new symbol-references tool
-func NewSymbolReferencesTool(client types.Client, config types.Config) *SymbolReferencesTool {
-	return &SymbolReferencesTool{
+// NewFindSymbolReferencesByAnchorTool creates a new find symbol references by anchor tool
+func NewFindSymbolReferencesByAnchorTool(client types.Client, config types.Config) *FindSymbolReferencesByAnchorTool {
+	return &FindSymbolReferencesByAnchorTool{
 		client: client,
 		config: config,
 	}
 }
 
 // GetTool returns the MCP tool definition
-func (t *SymbolReferencesTool) GetTool() mcp.Tool {
-	tool := mcp.NewTool("symbol_references",
-		mcp.WithDescription("Find all references to a symbol in Go code"),
-		mcp.WithString("symbol_name", mcp.Required(), mcp.Description("Symbol name to find references for")),
+func (t *FindSymbolReferencesByAnchorTool) GetTool() mcp.Tool {
+	tool := mcp.NewTool("find_symbol_references_by_anchor",
+		mcp.WithDescription("Find all references to a symbol by anchor name in the Go workspace"),
+		mcp.WithString("symbol_name", mcp.Required(), mcp.Description("Symbol name to find references for (case-insensitive matching)")),
 	)
 	return tool
 }
 
 // Handle processes the tool request
-func (t *SymbolReferencesTool) Handle(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (t *FindSymbolReferencesByAnchorTool) Handle(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	symbolName := mcp.ParseString(req, "symbol_name", "")
 	if symbolName == "" {
 		return mcp.NewToolResultError("symbol_name parameter is required"), nil
@@ -44,7 +44,7 @@ func (t *SymbolReferencesTool) Handle(ctx context.Context, req mcp.CallToolReque
 
 	symbols, err := t.client.FuzzyFindSymbol(ctx, symbolName)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to search workspace symbols: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to search Go workspace symbols for anchor: %s: %v", symbolName, err)), nil
 	}
 
 	var symbolResults []results.SymbolReferenceResult
@@ -88,12 +88,12 @@ func (t *SymbolReferencesTool) Handle(ctx context.Context, req mcp.CallToolReque
 	}
 
 	if len(symbolResults) == 0 {
-		return mcp.NewToolResultText(fmt.Sprintf("No results for symbol name: %s", symbolName)), nil
+		return mcp.NewToolResultText(fmt.Sprintf("No references found for symbol anchor: %s", symbolName)), nil
 	}
 
 	jsonBytes, err := json.MarshalIndent(symbolResults, "", "  ")
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal JSON: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal tool result into JSON: %v", err)), nil
 	}
 
 	return mcp.NewToolResultText(string(jsonBytes)), nil

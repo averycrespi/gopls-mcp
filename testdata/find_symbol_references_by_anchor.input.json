@@ -3,7 +3,7 @@
   "id": 3,
   "method": "tools/call",
   "params": {
-    "name": "symbol_references",
+    "name": "find_symbol_references_by_anchor",
     "arguments": {
       "symbol_name": "Calculator"
     }

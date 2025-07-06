@@ -1,4 +1,4 @@
-.PHONY: build test test-integration clean install help run test-find-symbol-definitions-by-name test-symbol-references test-list-symbols-in-file
+.PHONY: build test test-integration clean install help run test-find-symbol-definitions-by-name test-find-symbol-references-by-anchor test-list-symbols-in-file
 
 # Default target
 all: build
@@ -37,9 +37,9 @@ run:
 test-find-symbol-definitions-by-name: build
 	@./scripts/test-mcp-tool.sh find_symbol_definitions_by_name
 
-# Test symbol references tool
-test-symbol-references: build
-	@./scripts/test-mcp-tool.sh symbol_references
+# Test find symbol references by anchor tool
+test-find-symbol-references-by-anchor: build
+	@./scripts/test-mcp-tool.sh find_symbol_references_by_anchor
 
 # Test list symbols in file tool
 test-list-symbols-in-file: build
@@ -56,6 +56,6 @@ help:
 	@echo "  install-gopls                            Install gopls language server"
 	@echo "  run                                      Run server"
 	@echo "  test-find-symbol-definitions-by-name     Test find_symbol_definitions_by_name MCP tool"
-	@echo "  test-symbol-references                   Test symbol_references MCP tool"
+	@echo "  test-find-symbol-references-by-anchor    Test find_symbol_references_by_anchor MCP tool"
 	@echo "  test-list-symbols-in-file                Test list_symbols_in_file MCP tool"
 	@echo "  help                                     Show this help message"
