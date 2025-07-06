@@ -2,6 +2,12 @@
 
 An MCP (Model Context Protocol) server that exposes the LSP functionality of the [gopls](https://pkg.go.dev/golang.org/x/tools/gopls) language server.
 
+---
+
+> ⚠️ WARNING: This project is under active development. Breaking changes may be released without notice.
+
+> ⚠️ WARNING: MCP servers execute with full filesystem access and can run arbitrary commands. Only use trusted servers and review code before installation. This server executes gopls and reads Go source files within the specified workspace.
+
 ## Purpose
 
 Working with Go code requires understanding its semantic structure, not just text patterns. Traditional text-based operations like grep and find are insufficient for Go development because:
@@ -91,7 +97,7 @@ Example configuration:
 
 All tools return structured JSON responses for easy programmatic consumption.
 
-## Symbol Anchors
+### Note: Symbol Anchors
 
 Symbol anchors provide a precise way to identify specific symbol instances in Go code. They use the format:
 ```
@@ -107,7 +113,7 @@ Where:
 
 Anchors use display coordinates that match what you see in your editor. They are included in all symbol results and enable precise reference finding without ambiguity when multiple symbols share the same name.
 
-### find_symbol_definitions_by_name
+### Tool: find_symbol_definitions_by_name
 Find the definitions of a symbol by name in the Go workspace, returning a list of symbol definitions with fuzzy search.
 
 **Parameters:**
@@ -124,7 +130,7 @@ Find the definitions of a symbol by name in the Go workspace, returning a list o
   - `anchor`: Symbol anchor in format `go://FILE#LINE:CHAR` (display coordinates)
   - `hover_info`: Hover information from the language server (if available)
 
-### list_symbols_in_file
+### Tool: list_symbols_in_file
 List all symbols in a Go file, returning a list of symbols with hierarchical structure.
 
 **Parameters:**
@@ -149,7 +155,7 @@ The tool provides full hierarchical support for Go symbols. For example:
 
 This hierarchical structure is enabled by the LSP client's `hierarchicalDocumentSymbolSupport` capability.
 
-### find_symbol_references_by_anchor
+### Tool: find_symbol_references_by_anchor
 Find all references to a symbol by its precise anchor location in the Go workspace.
 
 **Parameters:**
@@ -162,7 +168,7 @@ Find all references to a symbol by its precise anchor location in the Go workspa
 - `references`: Array of reference objects, each containing:
   - `location`: Reference location with:
     - `file`: Relative file path from workspace root
-    - `line`: Display line number (starts at 1, matches editor display)  
+    - `line`: Display line number (starts at 1, matches editor display)
     - `character`: Display character position (starts at 1, matches editor display)
   - `anchor`: Symbol anchor for this specific reference location in format `go://FILE#LINE:CHAR`
 
