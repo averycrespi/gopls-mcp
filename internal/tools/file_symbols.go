@@ -80,7 +80,7 @@ func (t *FileSymbolsTool) convertDocumentSymbol(ctx context.Context, uri string,
 
 	// Try to enhance with hover information
 	if hoverInfo, hoverErr := t.client.GetHoverInfo(ctx, uri, docSym.SelectionRange.Start); hoverErr == nil && hoverInfo != "" {
-		result.Documentation = hoverInfo
+		result.HoverInfo = hoverInfo
 	}
 
 	// Convert children recursively

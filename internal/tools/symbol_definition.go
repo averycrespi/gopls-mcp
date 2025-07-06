@@ -74,7 +74,7 @@ func (t *SymbolDefinitionTool) Handle(ctx context.Context, req mcp.CallToolReque
 
 		// Try to enhance with hover information
 		if hoverInfo, err := t.client.GetHoverInfo(ctx, def.URI, def.Range.Start); err == nil && hoverInfo != "" {
-			entry.Documentation = hoverInfo
+			entry.HoverInfo = hoverInfo
 		}
 
 		symbolResults = append(symbolResults, entry)

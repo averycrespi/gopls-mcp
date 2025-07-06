@@ -80,7 +80,7 @@ Find the definition of a symbol by name.
 - `name`: Symbol name
 - `kind`: Symbol type (function, struct, method, etc.)
 - `location`: File path, line, and character position
-- `documentation`: Hover information (if available)
+- `hover_info`: Hover information from the language server (if available)
 
 ### symbol_references
 Find all references to a symbol.
@@ -92,7 +92,7 @@ Find all references to a symbol.
 - `name`: Symbol name
 - `kind`: Symbol type (function, struct, method, etc.)
 - `location`: File path, line, and character position of the symbol definition
-- `documentation`: Hover information (if available)
+- `hover_info`: Hover information from the language server (if available)
 - `references`: Array of locations where the symbol is referenced
 
 ### file_symbols
@@ -105,7 +105,7 @@ Get all symbols in a Go file with hierarchical structure support.
 - `name`: Symbol name
 - `kind`: Symbol type (function, struct, method, etc.)
 - `location`: File path, line, and character position
-- `documentation`: Hover information (if available)
+- `hover_info`: Hover information from the language server (if available)
 - `children`: Array of child symbols (for hierarchical symbols like structs with fields, methods, etc.)
 
 The tool provides full hierarchical support for Go symbols. For example:

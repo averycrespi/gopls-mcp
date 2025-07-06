@@ -70,7 +70,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 
 **JSON Output**: All symbol tools return structured JSON responses with:
 - Type-safe SymbolKind enums (function, struct, method, etc.)
-- Rich metadata including documentation from hover info
+- Rich metadata including hover info from the language server
 - Relative file paths from workspace root
 
 **Hierarchical Symbol Support**: The `file_symbols` tool provides full hierarchical support for Go symbols:
