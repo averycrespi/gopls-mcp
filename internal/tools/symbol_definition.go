@@ -99,7 +99,7 @@ func (t *SymbolDefinitionTool) Handle(ctx context.Context, req mcp.CallToolReque
 				}
 
 				// Try to get source context for definition
-				if sourceContext, contextErr := getSymbolContext(def.URI, def.Range.Start.Line, def.Range.Start.Character, 3); contextErr == nil {
+				if sourceContext, contextErr := readSourceContext(def.URI, def.Range.Start.Line, def.Range.Start.Character, 3); contextErr == nil {
 					defInfo.Source = sourceContext
 				}
 

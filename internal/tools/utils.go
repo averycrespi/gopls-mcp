@@ -2,6 +2,7 @@ package tools
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -57,21 +58,28 @@ func getRelativePath(absolutePath, workspaceRoot string) string {
 	return filepath.Base(absolutePath)
 }
 
-// readSourceLines reads specific lines from a source file
-func readSourceLines(filePath string, startLine, endLine int) ([]string, error) {
+// readSourceLines reads specific source lines from a file
+func readSourceLines(filePath string, startLine, endLine int, highlightLine int) ([]results.SourceLine, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 	defer file.Close()
 
-	var lines []string
+	var sourceLines []results.SourceLine
 	scanner := bufio.NewScanner(file)
 	currentLine := 0
 
 	for scanner.Scan() {
 		if currentLine >= startLine && currentLine <= endLine {
-			lines = append(lines, scanner.Text())
+			lineNum := currentLine + 1 // convert to 1-based line numbers
+			isHighlight := currentLine == highlightLine
+
+			sourceLines = append(sourceLines, results.SourceLine{
+				Number:    lineNum,
+				Content:   scanner.Text(),
+				Highlight: isHighlight,
+			})
 		}
 		currentLine++
 		if currentLine > endLine {
@@ -80,14 +88,14 @@ func readSourceLines(filePath string, startLine, endLine int) ([]string, error) 
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read source lines: %w", err)
 	}
 
-	return lines, nil
+	return sourceLines, nil
 }
 
-// getSymbolContext reads source code around a symbol location and returns structured SourceContext
-func getSymbolContext(uri string, startLine, startChar int, contextLines int) (*results.SourceContext, error) {
+// readSourceContext reads source code around a location and returns structured SourceContext
+func readSourceContext(uri string, startLine, startChar int, contextLines int) (*results.SourceContext, error) {
 	filePath := uriToPath(uri)
 
 	// Read lines around the symbol (with context)
@@ -97,22 +105,9 @@ func getSymbolContext(uri string, startLine, startChar int, contextLines int) (*
 	}
 	contextEnd := startLine + contextLines
 
-	lines, err := readSourceLines(filePath, contextStart, contextEnd)
+	sourceLines, err := readSourceLines(filePath, contextStart, contextEnd, startLine)
 	if err != nil {
 		return nil, err
-	}
-
-	// Create structured source lines with highlighting
-	sourceLines := make([]results.SourceLine, 0, len(lines))
-	for i, line := range lines {
-		lineNum := contextStart + i + 1 // 1-based line numbers
-		isHighlight := contextStart+i == startLine
-
-		sourceLines = append(sourceLines, results.SourceLine{
-			Number:    lineNum,
-			Content:   line,
-			Highlight: isHighlight,
-		})
 	}
 
 	return &results.SourceContext{Lines: sourceLines}, nil
