@@ -13,7 +13,7 @@ type Client interface {
 	FindReferences(ctx context.Context, uri string, position Position) ([]Location, error)
 	Hover(ctx context.Context, uri string, position Position) (string, error)
 	GetCompletion(ctx context.Context, uri string, position Position) ([]CompletionItem, error)
-	FindSymbol(ctx context.Context, query string) ([]SymbolInformation, error)
+	FuzzyFindSymbol(ctx context.Context, query string) ([]SymbolInformation, error)
 }
 
 // Position represents a position in a text document

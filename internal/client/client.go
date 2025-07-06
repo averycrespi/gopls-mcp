@@ -253,7 +253,7 @@ func (c *GoplsClient) GetCompletion(ctx context.Context, uri string, position ty
 	return completion.Items, nil
 }
 
-func (c *GoplsClient) FindSymbol(ctx context.Context, query string) ([]types.SymbolInformation, error) {
+func (c *GoplsClient) FuzzyFindSymbol(ctx context.Context, query string) ([]types.SymbolInformation, error) {
 	params := map[string]any{
 		"query": query,
 	}

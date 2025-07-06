@@ -192,11 +192,11 @@ func TestMCPServerIntegration(t *testing.T) {
 		assert.True(t, ok, "Expected tools array, got %T", result["tools"])
 
 		expectedTools := []string{
-			"go_to_definition",
+			"symbol_definition",
 			"find_references",
 			"hover_info",
 			"get_completion",
-			"find_symbol",
+			"symbol_search",
 		}
 
 		assert.Len(t, tools, len(expectedTools), "Should have exactly %d tools", len(expectedTools))
@@ -223,14 +223,14 @@ func TestMCPServerIntegration(t *testing.T) {
 		}
 	})
 
-	t.Run("GoToDefinition", func(t *testing.T) {
-		// Test go to definition by searching for "NewCalculator" symbol
+	t.Run("SymbolDefinition", func(t *testing.T) {
+		// Test symbol definition by searching for "NewCalculator" symbol
 		req := MCPRequest{
 			JSONRPC: "2.0",
 			ID:      3,
 			Method:  "tools/call",
 			Params: map[string]any{
-				"name": "go_to_definition",
+				"name": "symbol_definition",
 				"arguments": map[string]any{
 					"symbol": "NewCalculator",
 				},
@@ -238,53 +238,53 @@ func TestMCPServerIntegration(t *testing.T) {
 		}
 
 		resp := server.sendRequest(t, req)
-		assert.Nil(t, resp.Error, "Go to definition should not return an error")
+		assert.Nil(t, resp.Error, "Symbol definition should not return an error")
 
 		// Validate that we got a definition result
 		var result map[string]any
 		err := json.Unmarshal(resp.Result, &result)
-		assert.NoError(t, err, "Should be able to unmarshal go to definition result")
+		assert.NoError(t, err, "Should be able to unmarshal symbol definition result")
 
 		content, ok := result["content"]
-		assert.True(t, ok, "Expected content in go to definition result")
+		assert.True(t, ok, "Expected content in symbol definition result")
 
 		// Should contain definition information
 		contentStr := fmt.Sprintf("%v", content)
 		assert.Contains(t, contentStr, "NewCalculator", "Response should contain NewCalculator symbol")
 		assert.Contains(t, contentStr, "Definition:", "Response should contain definition information")
-		t.Logf("Go to definition content: %v", content)
+		t.Logf("Symbol definition content: %v", content)
 	})
 
-	t.Run("FindSymbol", func(t *testing.T) {
-		// Test finding symbols by searching for "Calculator"
+	t.Run("SymbolSearch", func(t *testing.T) {
+		// Test searching for symbols by searching for "Calculator"
 		req := MCPRequest{
 			JSONRPC: "2.0",
 			ID:      3.1,
 			Method:  "tools/call",
 			Params: map[string]any{
-				"name": "find_symbol",
+				"name": "symbol_search",
 				"arguments": map[string]any{
-					"query": "Calculator",
+					"symbol": "Calculator",
 				},
 			},
 		}
 
 		resp := server.sendRequest(t, req)
-		assert.Nil(t, resp.Error, "Find symbol should not return an error")
+		assert.Nil(t, resp.Error, "Symbol search should not return an error")
 
 		// Validate that we got symbol search results
 		var result map[string]any
 		err := json.Unmarshal(resp.Result, &result)
-		assert.NoError(t, err, "Should be able to unmarshal find symbol result")
+		assert.NoError(t, err, "Should be able to unmarshal symbol search result")
 
 		content, ok := result["content"]
-		assert.True(t, ok, "Expected content in find symbol result")
+		assert.True(t, ok, "Expected content in symbol search result")
 
 		// Should contain symbol information
 		contentStr := fmt.Sprintf("%v", content)
 		assert.Contains(t, contentStr, "Calculator", "Response should contain Calculator symbol")
 		assert.Contains(t, contentStr, "symbol(s) matching", "Response should indicate found symbols")
-		t.Logf("Find symbol content: %v", content)
+		t.Logf("Symbol search content: %v", content)
 	})
 
 	t.Run("HoverInfo", func(t *testing.T) {

@@ -48,8 +48,8 @@ func (s *GoplsServer) Serve(ctx context.Context) error {
 }
 
 func (s *GoplsServer) registerTools() {
-	goToDefTool := tools.NewGoToDefinitionTool(s.goplsClient, s.config)
-	s.mcpServer.AddTool(goToDefTool.GetTool(), goToDefTool.Handle)
+	symbolDefTool := tools.NewSymbolDefinitionTool(s.goplsClient, s.config)
+	s.mcpServer.AddTool(symbolDefTool.GetTool(), symbolDefTool.Handle)
 
 	findRefsTool := tools.NewFindReferencesTool(s.goplsClient, s.config)
 	s.mcpServer.AddTool(findRefsTool.GetTool(), findRefsTool.Handle)
@@ -60,7 +60,7 @@ func (s *GoplsServer) registerTools() {
 	completionTool := tools.NewGetCompletionTool(s.goplsClient, s.config)
 	s.mcpServer.AddTool(completionTool.GetTool(), completionTool.Handle)
 
-	findSymbolTool := tools.NewFindSymbolTool(s.goplsClient, s.config)
-	s.mcpServer.AddTool(findSymbolTool.GetTool(), findSymbolTool.Handle)
+	symbolSearchTool := tools.NewSymbolSearchTool(s.goplsClient, s.config)
+	s.mcpServer.AddTool(symbolSearchTool.GetTool(), symbolSearchTool.Handle)
 
 }
