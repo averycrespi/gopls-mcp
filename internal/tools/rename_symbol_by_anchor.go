@@ -142,50 +142,64 @@ func (t *RenameSymbolByAnchorTool) Handle(ctx context.Context, req mcp.CallToolR
 		FileEdits: make([]results.FileEdit, 0),
 	}
 
+	// Collect all name changes by file, deduplicating as we go
+	fileNameChanges := make(map[string]map[string]string) // file -> oldName -> newName
+
 	// Process Changes format (legacy)
 	for fileURI, textEdits := range workspaceEdit.Changes {
 		filePath := GetRelativePath(UriToPath(fileURI), t.config.WorkspaceRoot)
-		fileEdit := results.FileEdit{
-			File:  filePath,
-			Edits: make([]results.Edit, 0, len(textEdits)),
+		if fileNameChanges[filePath] == nil {
+			fileNameChanges[filePath] = make(map[string]string)
 		}
 
 		for _, textEdit := range textEdits {
-			edit := results.Edit{
-				StartLine:      textEdit.Range.Start.Line + 1,      // Convert to display coordinates
-				StartCharacter: textEdit.Range.Start.Character + 1, // Convert to display coordinates
-				EndLine:        textEdit.Range.End.Line + 1,        // Convert to display coordinates
-				EndCharacter:   textEdit.Range.End.Character + 1,   // Convert to display coordinates
-				OldText:        prepareResult.Placeholder,          // Use placeholder as old text if available
-				NewText:        textEdit.NewText,
+			oldText := prepareResult.Placeholder
+			if oldText == "" {
+				// Fallback: try to extract old text from the range if possible
+				oldText = textEdit.NewText // This is not ideal, but better than empty
 			}
-			fileEdit.Edits = append(fileEdit.Edits, edit)
+			fileNameChanges[filePath][oldText] = textEdit.NewText
 		}
-
-		toolResult.FileEdits = append(toolResult.FileEdits, fileEdit)
 	}
 
 	// Process DocumentChanges format (modern)
 	for _, docEdit := range workspaceEdit.DocumentChanges {
 		filePath := GetRelativePath(UriToPath(docEdit.TextDocument.URI), t.config.WorkspaceRoot)
-		fileEdit := results.FileEdit{
-			File:  filePath,
-			Edits: make([]results.Edit, 0, len(docEdit.Edits)),
+		if fileNameChanges[filePath] == nil {
+			fileNameChanges[filePath] = make(map[string]string)
 		}
 
 		for _, textEdit := range docEdit.Edits {
-			edit := results.Edit{
-				StartLine:      textEdit.Range.Start.Line + 1,      // Convert to display coordinates
-				StartCharacter: textEdit.Range.Start.Character + 1, // Convert to display coordinates
-				EndLine:        textEdit.Range.End.Line + 1,        // Convert to display coordinates
-				EndCharacter:   textEdit.Range.End.Character + 1,   // Convert to display coordinates
-				OldText:        prepareResult.Placeholder,          // Use placeholder as old text if available
-				NewText:        textEdit.NewText,
+			oldText := prepareResult.Placeholder
+			if oldText == "" {
+				// Fallback: try to extract old text from the range if possible
+				oldText = textEdit.NewText // This is not ideal, but better than empty
 			}
-			fileEdit.Edits = append(fileEdit.Edits, edit)
+			fileNameChanges[filePath][oldText] = textEdit.NewText
+		}
+	}
+
+	// Convert to FileEdit structure
+	for filePath, nameChanges := range fileNameChanges {
+		fileEdit := results.FileEdit{
+			File:    filePath,
+			Changes: make([]results.NameChange, 0, len(nameChanges)),
 		}
 
-		toolResult.FileEdits = append(toolResult.FileEdits, fileEdit)
+		for oldName, newName := range nameChanges {
+			// Only add if old and new names are different
+			if oldName != newName {
+				fileEdit.Changes = append(fileEdit.Changes, results.NameChange{
+					OldName: oldName,
+					NewName: newName,
+				})
+			}
+		}
+
+		// Only add file edit if there are actual changes
+		if len(fileEdit.Changes) > 0 {
+			toolResult.FileEdits = append(toolResult.FileEdits, fileEdit)
+		}
 	}
 
 	if len(toolResult.FileEdits) == 0 {
@@ -195,18 +209,18 @@ func (t *RenameSymbolByAnchorTool) Handle(ctx context.Context, req mcp.CallToolR
 			"symbol_anchor", anchorStr,
 			"new_name", newName)
 	} else {
-		totalEdits := 0
+		totalChanges := 0
 		for _, fe := range toolResult.FileEdits {
-			totalEdits += len(fe.Edits)
+			totalChanges += len(fe.Changes)
 		}
-		toolResult.Message = fmt.Sprintf("Successfully renamed symbol with %d edits across %d files.",
-			totalEdits, len(toolResult.FileEdits))
+		toolResult.Message = fmt.Sprintf("Successfully renamed symbol with %d name changes across %d files.",
+			totalChanges, len(toolResult.FileEdits))
 		slog.Debug("Rename completed",
 			"tool", "rename_symbol_by_anchor",
 			"symbol_anchor", anchorStr,
 			"new_name", newName,
 			"file_count", len(toolResult.FileEdits),
-			"edit_count", totalEdits)
+			"change_count", totalChanges)
 	}
 
 	jsonBytes, err := json.MarshalIndent(toolResult, "", "  ")

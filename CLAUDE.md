@@ -73,7 +73,7 @@ This is an MCP (Model Context Protocol) server that bridges LLMs with the Go lan
 - `find_symbol_definitions_by_name.go` - FindSymbolDefinitionsByNameToolResult with standardized structure (message, arguments with symbol_name, SymbolDefinition array)
 - `find_symbol_references_by_anchor.go` - FindSymbolReferencesByAnchorToolResult with standardized structure (message, arguments with symbol_anchor, SymbolReference array)
 - `list_symbols_in_file.go` - ListSymbolsInFileToolResult with standardized structure (message, arguments with file_path, hierarchical FileSymbol array)
-- `rename_symbol_by_anchor.go` - RenameSymbolByAnchorToolResult with standardized structure (message, arguments with symbol_anchor and new_name, FileEdit array with detailed edit information)
+- `rename_symbol_by_anchor.go` - RenameSymbolByAnchorToolResult with standardized structure (message, arguments with symbol_anchor and new_name, FileEdit array with simplified name changes)
 
 **Interface Design**: The codebase uses clean interfaces to separate concerns:
 - `types.Client` - Defines LSP client operations including Start/Stop (implemented by GoplsClient)

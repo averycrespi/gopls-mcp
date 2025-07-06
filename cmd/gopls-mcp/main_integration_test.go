@@ -232,16 +232,14 @@ func validateRenameSymbolByAnchorToolResult(t *testing.T, jsonContent string, ex
 	if len(result.FileEdits) > 0 {
 		firstEdit := result.FileEdits[0]
 		assert.NotEmpty(t, firstEdit.File, "File path should not be empty")
-		assert.Greater(t, len(firstEdit.Edits), 0, "Should have at least one edit in the file")
+		assert.Greater(t, len(firstEdit.Changes), 0, "Should have at least one name change in the file")
 
-		// Validate first edit
-		if len(firstEdit.Edits) > 0 {
-			edit := firstEdit.Edits[0]
-			assert.Greater(t, edit.StartLine, 0, "Start line should be positive")
-			assert.Greater(t, edit.StartCharacter, 0, "Start character should be positive")
-			assert.Greater(t, edit.EndLine, 0, "End line should be positive")
-			assert.Greater(t, edit.EndCharacter, 0, "End character should be positive")
-			assert.NotEmpty(t, edit.NewText, "New text should not be empty")
+		// Validate first name change
+		if len(firstEdit.Changes) > 0 {
+			change := firstEdit.Changes[0]
+			assert.NotEmpty(t, change.OldName, "Old name should not be empty")
+			assert.NotEmpty(t, change.NewName, "New name should not be empty")
+			assert.NotEqual(t, change.OldName, change.NewName, "Old and new names should be different")
 		}
 		t.Logf("Rename produced %d file edits", len(result.FileEdits))
 	} else {
