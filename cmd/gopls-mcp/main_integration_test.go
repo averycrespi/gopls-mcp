@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -138,6 +139,68 @@ func (s *MCPServerProcess) sendRequest(t *testing.T, req MCPRequest) MCPResponse
 	return MCPResponse{} // unreachable
 }
 
+// validateResponseStructure checks if the response contains expected structural elements
+func validateResponseStructure(t *testing.T, content string, expectedElements []string) {
+	for _, element := range expectedElements {
+		assert.Contains(t, content, element, "Response should contain: %s", element)
+	}
+}
+
+// normalizeWhitespace normalizes whitespace differences for comparison
+func normalizeWhitespace(s string) string {
+	// Replace multiple whitespaces/newlines with single spaces for comparison
+	lines := strings.Split(s, "\n")
+	var normalized []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			normalized = append(normalized, trimmed)
+		}
+	}
+	return strings.Join(normalized, "\n")
+}
+
+// getExpectedSymbolDefinitionResponse returns the expected JSON structure elements for NewCalculator
+func getExpectedSymbolDefinitionResponse() []string {
+	return []string{
+		"\"query\": \"NewCalculator\"",
+		"\"count\": 1",
+		"\"symbols\":",
+		"\"name\": \"NewCalculator\"",
+		"\"kind\": \"function\"",
+		"\"location\":",
+		"\"file\": \"calculator.go\"",
+		"\"line\": 11",
+		"\"definitions\":",
+		"\"documentation\":",
+		"\"source\":",
+		"\"lines\":",
+		"\"number\":",
+		"\"content\":",
+		"\"highlight\":",
+	}
+}
+
+// getExpectedSymbolSearchResponse returns the expected JSON structure elements for Calculator search
+func getExpectedSymbolSearchResponse() []string {
+	return []string{
+		"\"query\": \"Calculator\"",
+		"\"count\":",
+		"\"symbols\":",
+		"\"name\": \"Calculator\"",
+		"\"kind\": \"struct\"",
+		"\"location\":",
+		"\"file\": \"calculator.go\"",
+		"\"line\":",
+		"\"documentation\":",
+		"\"source\":",
+		"\"lines\":",
+		"\"number\":",
+		"\"content\":",
+		"\"highlight\":",
+	}
+}
+
 // initialize sends the MCP initialize request
 func (s *MCPServerProcess) initialize(t *testing.T) {
 	req := MCPRequest{
@@ -248,10 +311,11 @@ func TestMCPServerIntegration(t *testing.T) {
 		content, ok := result["content"]
 		assert.True(t, ok, "Expected content in symbol definition result")
 
-		// Should contain definition information
+		// Validate the complete response structure
 		contentStr := fmt.Sprintf("%v", content)
-		assert.Contains(t, contentStr, "NewCalculator", "Response should contain NewCalculator symbol")
-		assert.Contains(t, contentStr, "Definition:", "Response should contain definition information")
+		expectedElements := getExpectedSymbolDefinitionResponse()
+		validateResponseStructure(t, contentStr, expectedElements)
+		
 		t.Logf("Symbol definition content: %v", content)
 	})
 
@@ -280,10 +344,11 @@ func TestMCPServerIntegration(t *testing.T) {
 		content, ok := result["content"]
 		assert.True(t, ok, "Expected content in symbol search result")
 
-		// Should contain symbol information
+		// Validate the complete response structure
 		contentStr := fmt.Sprintf("%v", content)
-		assert.Contains(t, contentStr, "Calculator", "Response should contain Calculator symbol")
-		assert.Contains(t, contentStr, "symbol(s) matching", "Response should indicate found symbols")
+		expectedElements := getExpectedSymbolSearchResponse()
+		validateResponseStructure(t, contentStr, expectedElements)
+		
 		t.Logf("Symbol search content: %v", content)
 	})
 

@@ -2,8 +2,8 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/averycrespi/gopls-mcp/pkg/types"
 
@@ -33,6 +33,7 @@ func (t *SymbolSearchTool) GetTool() mcp.Tool {
 	return tool
 }
 
+
 // Handle processes the tool request
 func (t *SymbolSearchTool) Handle(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	symbol := mcp.ParseString(req, "symbol", "")
@@ -46,15 +47,50 @@ func (t *SymbolSearchTool) Handle(ctx context.Context, req mcp.CallToolRequest) 
 	}
 
 	if len(symbols) == 0 {
-		return mcp.NewToolResultText(fmt.Sprintf("No symbols found matching '%s'", symbol)), nil
+		result := SymbolSearchResult{
+			Query:   symbol,
+			Count:   0,
+			Symbols: []SymbolSearchResultEntry{},
+		}
+		jsonBytes, _ := json.MarshalIndent(result, "", "  ")
+		return mcp.NewToolResultText(string(jsonBytes)), nil
 	}
 
-	var results []string
+	// Build JSON result
+	result := SymbolSearchResult{
+		Query:   symbol,
+		Count:   len(symbols),
+		Symbols: make([]SymbolSearchResultEntry, 0, len(symbols)),
+	}
+
 	for _, sym := range symbols {
-		results = append(results, fmt.Sprintf("Symbol: %s (kind: %d) at %s:%d:%d",
-			sym.Name, sym.Kind, sym.Location.URI, sym.Location.Range.Start.Line, sym.Location.Range.Start.Character))
+		entry := SymbolSearchResultEntry{
+			Name: sym.Name,
+			Kind: symbolKindToString(sym.Kind),
+			Location: SymbolLocation{
+				File:      getRelativePath(uriToPath(sym.Location.URI), t.config.WorkspaceRoot),
+				Line:      sym.Location.Range.Start.Line + 1,
+				Character: sym.Location.Range.Start.Character + 1,
+			},
+		}
+
+		// Try to get hover information for additional details
+		if hoverInfo, err := t.client.Hover(ctx, sym.Location.URI, sym.Location.Range.Start); err == nil && hoverInfo != "" {
+			entry.Documentation = hoverInfo
+		}
+
+		// Try to get source context
+		if contextStr, err := getSymbolContext(sym.Location.URI, sym.Location.Range.Start.Line, sym.Location.Range.Start.Character, 2); err == nil {
+			entry.Source = parseSourceContext(contextStr, sym.Location.Range.Start.Line)
+		}
+
+		result.Symbols = append(result.Symbols, entry)
 	}
 
-	return mcp.NewToolResultText(fmt.Sprintf("Found %d symbol(s) matching '%s':\n- %s",
-		len(symbols), symbol, strings.Join(results, "\n- "))), nil
+	jsonBytes, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal JSON: %v", err)), nil
+	}
+
+	return mcp.NewToolResultText(string(jsonBytes)), nil
 }
