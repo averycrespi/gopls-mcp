@@ -50,6 +50,16 @@ fi
 echo "Testing $TOOL_NAME tool..."
 echo "=================================="
 
+# Display the tool input
+echo "Tool Input:"
+echo "-----------"
+if $USE_JQ; then
+    cat "./testdata/${TOOL_NAME}.input.json" | jq -C .
+else
+    cat "./testdata/${TOOL_NAME}.input.json"
+fi
+echo ""
+
 # Run the MCP server with timeout and capture output
 OUTPUT=$(timeout 10s bash -c '{
     tr -d "\n" < ./testdata/mcp_init.json; echo "";
@@ -83,16 +93,8 @@ echo "$OUTPUT" | while IFS= read -r line; do
             else
                 echo "No JSON content found in response"
             fi
-        else
-            # This is likely an initialization response
-            echo "Server Response:"
-            echo "---------------"
-            if $USE_JQ; then
-                echo "$line" | jq -C .
-            else
-                echo "$line"
-            fi
         fi
+        # Skip initialization responses (don't print them)
     else
         # Not JSON, probably an error or log message
         echo "Output: $line"
