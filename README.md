@@ -33,7 +33,7 @@ This enables LLMs to work with Go code the same way IDEs do - with full semantic
 | `list_symbols_in_file`             | List all symbols in a Go file with hierarchy      | `file_path`, `limit`, `include_hover`   | Hierarchical list of file symbols                       |
 | `find_symbol_definitions_by_name`  | Find symbol definitions by name with fuzzy search | `symbol_name`, `limit`, `include_hover` | List of symbol definitions which fuzzily-match the name |
 | `find_symbol_references_by_anchor` | Find all references to a specific symbol instance | `symbol_anchor`, `limit`                | List of symbol references for the anchor                |
-| `rename_symbol_by_anchor`          | Rename a symbol across the entire workspace       | `symbol_anchor`, `new_name`             | List of name changes per file (old→new)                 |
+| (WIP) `rename_symbol_by_anchor`    | Rename a symbol across the entire workspace       | `symbol_anchor`, `new_name`             | List of name changes per file (old→new)                 |
 
 All tools return structured JSON responses with precise location information and symbol anchors for disambiguation.
 
